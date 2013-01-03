@@ -8,7 +8,7 @@
 package bitradix
 
 import (
-	"fmt"
+	"strconv"
 )
 
 // Radix implements a radix tree. 
@@ -34,11 +34,10 @@ func (r *Radix) Insert(n uint64, v uint32) *Radix {
 
 // Implement insert
 func (r *Radix) insert(n uint64, v uint32, bit uint) *Radix {
-	fmt.Printf("key %064b\n", n)
 	// if bit == 1 ? TODO(mg)
 	switch r.internal {
 	case true:
-		// internal node, no key, with branches
+		// internal node, no key, with branches, walk the branches
 		switch bitK(n, bit) {
 		case 0:
 			return r.zero.insert(n, v, bit-1)
@@ -55,17 +54,16 @@ func (r *Radix) insert(n uint64, v uint32, bit uint) *Radix {
 		}
 
 		// match keys and create new branches, and go from there
+
+		// branch
+		r.zero = &Radix{nil, nil, 0, false, 0, false}
+		r.one = &Radix{nil, nil, 0, false, 0, false}
+		r.internal = true
+		r.keyset = false
 		bitcurrent := bitK(r.key, bit)
 		bitnew := bitK(n, bit)
 
 		if bitcurrent == bitnew {
-			// equal, branch
-			println("equal, branch")
-			r.zero = &Radix{nil, nil, 0, false, 0, false}
-			r.one = &Radix{nil, nil, 0, false, 0, false}
-			// mark current node as intermediate
-			r.internal = true
-			r.keyset = false
 			// "fill" the correct node, with the current key - and reenter the function
 			if bitcurrent == 0 {
 				r.zero.key = r.key
@@ -81,11 +79,6 @@ func (r *Radix) insert(n uint64, v uint32, bit uint) *Radix {
 			}
 		} else {
 			// not equal, branch and fill and return	
-			println("not equal, branch and fill and return")
-			r.zero = &Radix{nil, nil, 0, false, 0, false}
-			r.one = &Radix{nil, nil, 0, false, 0, false}
-			r.internal = true	// current node, becomes intermediate
-			r.keyset = false
 			if bitcurrent == 0 {
 				// bitnew == 1
 				r.zero.key = r.key
@@ -109,11 +102,28 @@ func (r *Radix) insert(n uint64, v uint32, bit uint) *Radix {
 	return nil
 }
 
+func (r *Radix) String() string {
+	return r.str("")
+}
+
+func (r *Radix) str(indent string) (s string) {
+	s += indent
+	if r.keyset {
+		s += strconv.Itoa(int(r.key)) + "\n" + indent
+	} else {
+		s += "<nil>\n" + indent
+	}
+	if r.internal {
+		s += "0: " + r.zero.str(indent + " ")
+		s += "1: " + r.one.str(indent + " ")
+	}
+	return s
+}
+
 // From: http://stackoverflow.com/questions/2249731/how-to-get-bit-by-bit-data-from-a-integer-value-in-c
 
 // Return bit k from n. We count from the right, MSB left.
 // So k = 0 is the last bit on the left and k = 63 is the first bit on the right.
 func bitK(n uint64, k uint) byte {
-	println("bitting", n, "bit #", k)
 	return byte((n & (1 << k)) >> k)
 }

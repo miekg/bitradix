@@ -7,8 +7,11 @@ import (
 func TestInsert(t *testing.T) {
 	r := New()
 	r.Insert(0x08, 2012)
+	println(r.String())
 	r.Insert(0x04, 2010)
-//	r.Insert(0x09, 2013)
+	println(r.String())
+	r.Insert(0x09, 2013)
+	println(r.String())
 }
 
 type bittest struct {
