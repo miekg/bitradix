@@ -18,7 +18,7 @@ import (
 type Radix struct {
 	branch   [2]*Radix // branch[0] is left branch for 0, and branch[1] the right for 1
 	Key      uint64    // The key under which this value is stored.
-	keyset   bool      // true if the key has been set
+	set   bool      // true if the key has been set
 	Value    uint32    // The value stored.
 	internal bool      // internal node
 }
@@ -60,8 +60,8 @@ func (r *Radix) insert(n uint64, v uint32, bit uint) *Radix {
 		return r.branch[bitK(n, bit)].insert(n, v, bit-1)
 	case false:
 		// External node, (optional) key, no branches
-		if !r.keyset {
-			r.keyset = true
+		if !r.set {
+			r.set = true
 			r.Key = n
 			r.Value = v
 			return r
@@ -71,22 +71,22 @@ func (r *Radix) insert(n uint64, v uint32, bit uint) *Radix {
 		r.branch[0], r.branch[1] = New(), New()
 
 		r.internal = true
-		r.keyset = false
+		r.set = false
 		bcur := bitK(r.Key, bit)
 		bnew := bitK(n, bit)
 
 		if bcur == bnew {
 			// "fill" the correct node, with the current key - and call ourselves
 			r.branch[bcur].Key = r.Key
-			r.branch[bcur].keyset = true
+			r.branch[bcur].set = true
 			r.Key = 0
 			return r.branch[bcur].insert(n, v, bit-1)
 		}
 		// bcur = 0, bnew == 1 or vice versa
 		r.branch[bcur].Key = r.Key
-		r.branch[bcur].keyset = true
+		r.branch[bcur].set = true
 		r.branch[bnew].Key = n
-		r.branch[bnew].keyset = true
+		r.branch[bnew].set = true
 		r.Key = 0
 		return r.branch[bnew]
 	}
@@ -101,6 +101,7 @@ func (r *Radix) find(n uint64, bit uint) *Radix {
 		return r.branch[bitK(n, bit)].find(n, bit-1)
 	case false:
 		// External node, (optional) key, no branches
+		// TODO(mg): if set
 		return r
 	}
 	panic("bitradix: not reached")
@@ -108,7 +109,7 @@ func (r *Radix) find(n uint64, bit uint) *Radix {
 
 func (r *Radix) str(indent string) (s string) {
 	s += indent
-	if r.keyset {
+	if r.set {
 		s += strconv.Itoa(int(r.Key)) + "\n" + indent
 	} else {
 		s += "<nil>\n" + indent
