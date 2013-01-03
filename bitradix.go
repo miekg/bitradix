@@ -13,17 +13,16 @@ import (
 
 // Radix implements a radix tree. 
 type Radix struct {
-	zero     *Radix // left branch
-	one      *Radix // right branch
-	key      uint64 // the key stored
-	keyset   bool   // true if the key has been set
-	Value    uint32 // The value stored.
-	internal bool   // internal node
+	branch   [2]*Radix // branch[0] is left branch for 0, and branch[1] the right for 1
+	key      uint64    // the key stored
+	keyset   bool      // true if the key has been set
+	Value    uint32    // The value stored.
+	internal bool      // internal node
 }
 
 // New returns an empty, initialized Radix tree.
 func New() *Radix {
-	return &Radix{nil, nil, 0, false, 0, false}
+	return &Radix{[2]*Radix{nil, nil}, 0, false, 0, false}
 }
 
 // Insert inserts a new value in the tree r. It returns the inserted node.
@@ -34,18 +33,13 @@ func (r *Radix) Insert(n uint64, v uint32) *Radix {
 
 // Implement insert
 func (r *Radix) insert(n uint64, v uint32, bit uint) *Radix {
-	// if bit == 1 ? TODO(mg)
+	// if bit == 0 ? TODO(mg) When does that happen
 	switch r.internal {
 	case true:
-		// internal node, no key, with branches, walk the branches
-		switch bitK(n, bit) {
-		case 0:
-			return r.zero.insert(n, v, bit-1)
-		case 1:
-			return r.one.insert(n, v, bit-1)
-		}
+		// Internal node, no key. With branches, walk the branches.
+		return r.branch[bitK(n, bit)].insert(n, v, bit-1)
 	case false:
-		// external node, possible key, no branches
+		// external node, (optional) key, no branches
 		if !r.keyset {
 			r.keyset = true
 			r.key = n
@@ -54,52 +48,29 @@ func (r *Radix) insert(n uint64, v uint32, bit uint) *Radix {
 		}
 
 		// match keys and create new branches, and go from there
+		r.branch[0], r.branch[1] = New(), New()
 
-		// branch
-		r.zero = &Radix{nil, nil, 0, false, 0, false}
-		r.one = &Radix{nil, nil, 0, false, 0, false}
 		r.internal = true
 		r.keyset = false
 		bitcurrent := bitK(r.key, bit)
 		bitnew := bitK(n, bit)
 
 		if bitcurrent == bitnew {
-			// "fill" the correct node, with the current key - and reenter the function
-			if bitcurrent == 0 {
-				r.zero.key = r.key
-				r.zero.keyset = true
-				r.key = 0
-				return r.zero.insert(n, v, bit-1)
-			}
-			if bitcurrent == 1 {
-				r.one.key = r.key
-				r.one.keyset = true
-				r.key = 0
-				return r.one.insert(n, v, bit-1)
-			}
-		} else {
-			// not equal, branch and fill and return	
-			if bitcurrent == 0 {
-				// bitnew == 1
-				r.zero.key = r.key
-				r.zero.keyset = true
-				r.one.key = n
-				r.one.keyset = true
-				r.key = 0
-				return r.one
-			}
-			if bitcurrent == 1 {
-				// bitnew == 0
-				r.one.key = r.key
-				r.one.keyset = true
-				r.zero.key = n
-				r.zero.keyset = true
-				r.key = 0
-				return r.zero
-			}
+			// "fill" the correct node, with the current key - and call ourselves
+			r.branch[bitcurrent].key = r.key
+			r.branch[bitcurrent].keyset = true
+			r.key = 0
+			return r.branch[bitcurrent].insert(n, v, bit-1)
 		}
+		// bitcurrent = 0, bitnew == 1 or vice versa
+		r.branch[bitcurrent].key = r.key
+		r.branch[bitcurrent].keyset = true
+		r.branch[bitnew].key = n
+		r.branch[bitnew].keyset = true
+		r.key = 0
+		return r.branch[bitnew]
 	}
-	return nil
+	panic("bitradix: not reached")
 }
 
 func (r *Radix) String() string {
@@ -114,8 +85,8 @@ func (r *Radix) str(indent string) (s string) {
 		s += "<nil>\n" + indent
 	}
 	if r.internal {
-		s += "0: " + r.zero.str(indent + " ")
-		s += "1: " + r.one.str(indent + " ")
+		s += "0: " + r.branch[0].str(indent+" ")
+		s += "1: " + r.branch[1].str(indent+" ")
 	}
 	return s
 }
