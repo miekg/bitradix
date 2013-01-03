@@ -6,9 +6,9 @@ import (
 
 func TestInsert(t *testing.T) {
 	r := New()
-	r.Insert(0x08, "AS2012")
-	r.Insert(0x04, "AS2010")
-//	r.Insert(0x09, "AS2013")
+	r.Insert(0x08, 2012)
+	r.Insert(0x04, 2010)
+//	r.Insert(0x09, 2013)
 }
 
 type bittest struct {

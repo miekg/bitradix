@@ -1,5 +1,5 @@
-// Package bitradix implements a radix tree that branches on the bits in a key.
-// The value that can be stored is an unsigned 32 bit integer
+// Package bitradix implements a radix tree that branches on the bits in a 64 bits key.
+// The value that can be stored is an unsigned 32 bit integer.
 //                                                                                                  
 // A radix tree is defined in:
 //    Donald R. Morrison. "PATRICIA -- practical algorithm to retrieve
@@ -17,23 +17,23 @@ type Radix struct {
 	one      *Radix // right branch
 	key      uint64 // the key stored
 	keyset   bool   // true if the key has been set
-	Value    string // The value stored.
+	Value    uint32 // The value stored.
 	internal bool   // internal node
 }
 
 // New returns an empty, initialized Radix tree.
 func New() *Radix {
-	return &Radix{nil, nil, 0, false, "", false}
+	return &Radix{nil, nil, 0, false, 0, false}
 }
 
 // Insert inserts a new value in the tree r. It returns the inserted node.
 // r must be the root of the tree.
-func (r *Radix) Insert(n uint64, v string) *Radix {
+func (r *Radix) Insert(n uint64, v uint32) *Radix {
 	return r.insert(n, v, 63)
 }
 
 // Implement insert
-func (r *Radix) insert(n uint64, v string, bit uint) *Radix {
+func (r *Radix) insert(n uint64, v uint32, bit uint) *Radix {
 	fmt.Printf("key %064b\n", n)
 	// if bit == 1 ? TODO(mg)
 	switch r.internal {
@@ -61,8 +61,8 @@ func (r *Radix) insert(n uint64, v string, bit uint) *Radix {
 		if bitcurrent == bitnew {
 			// equal, branch
 			println("equal, branch")
-			r.zero = &Radix{nil, nil, 0, false, "", false}
-			r.one = &Radix{nil, nil, 0, false, "", false}
+			r.zero = &Radix{nil, nil, 0, false, 0, false}
+			r.one = &Radix{nil, nil, 0, false, 0, false}
 			// mark current node as intermediate
 			r.internal = true
 			r.keyset = false
@@ -82,8 +82,8 @@ func (r *Radix) insert(n uint64, v string, bit uint) *Radix {
 		} else {
 			// not equal, branch and fill and return	
 			println("not equal, branch and fill and return")
-			r.zero = &Radix{nil, nil, 0, false, "", false}
-			r.one = &Radix{nil, nil, 0, false, "", false}
+			r.zero = &Radix{nil, nil, 0, false, 0, false}
+			r.one = &Radix{nil, nil, 0, false, 0, false}
 			r.internal = true	// current node, becomes intermediate
 			r.keyset = false
 			if bitcurrent == 0 {
