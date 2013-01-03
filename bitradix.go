@@ -78,14 +78,17 @@ func (r *Radix) insert(n uint8, v uint32, bit uint) *Radix {
 		if bcur == bnew {
 			// "fill" the correct node, with the current key - and call ourselves
 			r.branch[bcur].Key = r.Key
+			r.branch[bcur].Value = r.Value
 			r.branch[bcur].set = true
 			r.Key = 0
 			return r.branch[bcur].insert(n, v, bit-1)
 		}
 		// bcur = 0, bnew == 1 or vice versa
 		r.branch[bcur].Key = r.Key
+		r.branch[bcur].Value = r.Value
 		r.branch[bcur].set = true
 		r.branch[bnew].Key = n
+		r.branch[bnew].Value = v
 		r.branch[bnew].set = true
 		r.Key = 0
 		return r.branch[bnew]
