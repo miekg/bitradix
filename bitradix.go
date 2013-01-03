@@ -7,6 +7,9 @@
 //    October 1968
 package bitradix
 
+// With help from:
+// http://faculty.simpson.edu/lydia.sinapova/www/cmsc250/LN250_Weiss/L08-Radix.htm
+
 import (
 	"strconv"
 )
@@ -14,7 +17,7 @@ import (
 // Radix implements a radix tree. 
 type Radix struct {
 	branch   [2]*Radix // branch[0] is left branch for 0, and branch[1] the right for 1
-	key      uint64    // the key stored
+	Key      uint64    // The key under which this value is stored.
 	keyset   bool      // true if the key has been set
 	Value    uint32    // The value stored.
 	internal bool      // internal node
@@ -29,6 +32,19 @@ func New() *Radix {
 // r must be the root of the tree.
 func (r *Radix) Insert(n uint64, v uint32) *Radix {
 	return r.insert(n, v, 63)
+}
+
+// Remove removes a value from the tree r. It returns the node removed, or nil
+// when nothing is found. r must be the root of the tree.
+func (r *Radix) Remove(n uint64) *Radix {
+	return nil
+}
+
+// Find searches the tree for the key n. It returns the node found. Note that
+// the returned node does not have to be an exact match, it may also be the best
+// matching parent. Comparing r.Key with n tells the caller if the match was exact.
+func (r *Radix) Find(n uint64) *Radix {
+
 }
 
 // Implement insert
