@@ -52,23 +52,23 @@ func (r *Radix) insert(n uint64, v uint32, bit uint) *Radix {
 
 		r.internal = true
 		r.keyset = false
-		bitcurrent := bitK(r.key, bit)
-		bitnew := bitK(n, bit)
+		bcur := bitK(r.key, bit)
+		bnew := bitK(n, bit)
 
-		if bitcurrent == bitnew {
+		if bcur == bnew {
 			// "fill" the correct node, with the current key - and call ourselves
-			r.branch[bitcurrent].key = r.key
-			r.branch[bitcurrent].keyset = true
+			r.branch[bcur].key = r.key
+			r.branch[bcur].keyset = true
 			r.key = 0
-			return r.branch[bitcurrent].insert(n, v, bit-1)
+			return r.branch[bcur].insert(n, v, bit-1)
 		}
-		// bitcurrent = 0, bitnew == 1 or vice versa
-		r.branch[bitcurrent].key = r.key
-		r.branch[bitcurrent].keyset = true
-		r.branch[bitnew].key = n
-		r.branch[bitnew].keyset = true
+		// bcur = 0, bnew == 1 or vice versa
+		r.branch[bcur].key = r.key
+		r.branch[bcur].keyset = true
+		r.branch[bnew].key = n
+		r.branch[bnew].keyset = true
 		r.key = 0
-		return r.branch[bitnew]
+		return r.branch[bnew]
 	}
 	panic("bitradix: not reached")
 }
