@@ -14,7 +14,7 @@ import (
 	"strconv"
 )
 
-const bitSize = 64	// length in bits of the key
+const bitSize = 64 // length in bits of the key
 
 // Radix implements a radix tree. Key is exported, but should not be set. TODO(mg) better.
 type Radix struct {
@@ -33,7 +33,7 @@ func New() *Radix {
 // Insert inserts a new value in the tree r. It returns the inserted node.
 // r must be the root of the tree.
 func (r *Radix) Insert(n uint64, v uint32) *Radix {
-	return r.insert(n, v, bitSize - 1)
+	return r.insert(n, v, bitSize-1)
 }
 
 // Remove removes a value from the tree r. It returns the node removed, or nil
@@ -44,7 +44,7 @@ func (r *Radix) Remove(n uint64) *Radix {
 
 // Find searches the tree for the key n. It returns the node found. 
 func (r *Radix) Find(n uint64) *Radix {
-	return r.find(n, bitSize - 1)
+	return r.find(n, bitSize-1)
 }
 
 func (r *Radix) String() string {
@@ -66,15 +66,14 @@ func (r *Radix) insert(n uint64, v uint32, bit uint) *Radix {
 			r.Value = v
 			return r
 		}
-
 		// create new branches, and go from there
 		r.branch[0], r.branch[1] = New(), New()
-
+		// Current node, becomes an intermediate node
 		r.internal = true
 		r.set = false
+
 		bcur := bitK(r.Key, bit)
 		bnew := bitK(n, bit)
-
 		if bcur == bnew {
 			// "fill" the correct node, with the current key - and call ourselves
 			r.branch[bcur].Key = r.Key
@@ -100,7 +99,7 @@ func (r *Radix) find(n uint64, bit uint) *Radix {
 	// if bit == 0, return the current node?? Also see comment in r.insert()
 	switch r.internal {
 	case true:
-		// Internal node, no key
+		// Internal node, no key, continue in the right branch
 		return r.branch[bitK(n, bit)].find(n, bit-1)
 	case false:
 		if r.set {
