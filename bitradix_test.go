@@ -5,7 +5,7 @@ import (
 )
 
 func TestInsert(t *testing.T) {
-	tests := map[uint8]uint32{
+	tests := map[uint64]uint32{
 		0x08: 2012,
 		0x04: 2010,
 		0x09: 2013,
@@ -19,21 +19,26 @@ func TestInsert(t *testing.T) {
 	}
 }
 
-func TestFind(t *testing.T) {
+func TestFindExact(t *testing.T) {
+	tests := map[uint64]uint32{
+		0x08: 2012,
+		0x04: 2010,
+		0x09: 2013,
+	}
 	r := New()
-	r.Insert(0x08, 2012)
-	r.Insert(0x04, 2010)
-	r.Insert(0x09, 2013)
-	println(r.String())
-
-	v1 := r.Find(0x08)
-	println(v1.Key, v1.Value)
-	v1 = r.Find(0x04)
-	println(v1.Key, v1.Value)
+	for k, v := range tests {
+		r.Insert(k, v)
+	}
+	for k, v := range tests {
+		if x := r.Find(k); x.Value != v {
+			t.Logf("Expected %d, got %d for %d\n", v, x.Value, k)
+			t.Fail()
+		}
+	}
 }
 
 type bittest struct {
-	value uint8
+	value uint64
 	bit   uint
 }
 
