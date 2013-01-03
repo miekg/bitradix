@@ -14,11 +14,11 @@ import (
 	"strconv"
 )
 
-// Radix implements a radix tree. 
+// Radix implements a radix tree. Key is exported, but should not be set. TODO(mg) better.
 type Radix struct {
 	branch   [2]*Radix // branch[0] is left branch for 0, and branch[1] the right for 1
 	Key      uint64    // The key under which this value is stored.
-	set   bool      // true if the key has been set
+	set      bool      // true if the key has been set
 	Value    uint32    // The value stored.
 	internal bool      // internal node
 }
@@ -40,9 +40,7 @@ func (r *Radix) Remove(n uint64) *Radix {
 	return nil
 }
 
-// Find searches the tree for the key n. It returns the node found. Note that
-// the returned node does not have to be an exact match, it may also be the best
-// matching parent. Comparing r.Key with n tells the caller if the match was exact.
+// Find searches the tree for the key n. It returns the node found. 
 func (r *Radix) Find(n uint64) *Radix {
 	return r.find(n, 63)
 }
@@ -100,9 +98,10 @@ func (r *Radix) find(n uint64, bit uint) *Radix {
 		// Internal node, no key
 		return r.branch[bitK(n, bit)].find(n, bit-1)
 	case false:
-		// External node, (optional) key, no branches
-		// TODO(mg): if set
-		return r
+		if r.set {
+			return r
+		}
+		return nil
 	}
 	panic("bitradix: not reached")
 }

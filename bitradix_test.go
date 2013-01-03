@@ -5,13 +5,30 @@ import (
 )
 
 func TestInsert(t *testing.T) {
+	tests := map[uint64]uint32{
+		0x08: 2012,
+		0x04: 2010,
+		0x09: 2013,
+	}
+	r := New()
+	for key, value := range tests {
+		if x := r.Insert(key, value); x.Value != value {
+			t.Logf("Expected %d, got %d\n", value, x.Value)
+			t.Fail()
+		}
+	}
+}
+
+func TestFind(t *testing.T) {
 	r := New()
 	r.Insert(0x08, 2012)
-	println(r.String())
 	r.Insert(0x04, 2010)
-	println(r.String())
 	r.Insert(0x09, 2013)
-	println(r.String())
+
+	v1 := r.Find(0x08)
+	println(v1.Key, v1.Value)
+	v1 = r.Find(0x04)
+	println(v1.Key, v1.Value)
 }
 
 type bittest struct {
