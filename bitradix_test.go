@@ -5,7 +5,7 @@ import (
 )
 
 func TestInsert(t *testing.T) {
-	tests := map[uint64]uint32{
+	tests := map[uint8]uint32{
 		0x08: 2012,
 		0x04: 2010,
 		0x09: 2013,
@@ -33,7 +33,7 @@ func TestFind(t *testing.T) {
 }
 
 type bittest struct {
-	value uint64
+	value uint8
 	bit   uint
 }
 
