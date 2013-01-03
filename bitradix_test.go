@@ -13,7 +13,7 @@ func TestInsert(t *testing.T) {
 	r := New()
 	for key, value := range tests {
 		if x := r.Insert(key, value); x.Value != value {
-			t.Logf("Expected %d, got %d\n", value, x.Value)
+			t.Logf("Expected %d, got %d for %d\n", value, x.Value, key)
 			t.Fail()
 		}
 	}
@@ -24,6 +24,7 @@ func TestFind(t *testing.T) {
 	r.Insert(0x08, 2012)
 	r.Insert(0x04, 2010)
 	r.Insert(0x09, 2013)
+	println(r.String())
 
 	v1 := r.Find(0x08)
 	println(v1.Key, v1.Value)
