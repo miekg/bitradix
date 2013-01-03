@@ -53,10 +53,58 @@ func (r *Radix) insert(n uint64, v string, bit uint) *Radix {
 			r.Value = v
 			return r
 		}
-		// match keys and see how many extra nodes we need to store these
 
+		// match keys and create new branches, and go from there
+		bitcurrent := bitK(r.key, bit)
+		bitnew := bitK(n, bit)
 
-
+		if bitcurrent == bitnew {
+			// equal, branch
+			println("equal, branch")
+			r.zero = &Radix{nil, nil, 0, false, "", false}
+			r.one = &Radix{nil, nil, 0, false, "", false}
+			// mark current node as intermediate
+			r.internal = true
+			r.keyset = false
+			// "fill" the correct node, with the current key - and reenter the function
+			if bitcurrent == 0 {
+				r.zero.key = r.key
+				r.zero.keyset = true
+				r.key = 0
+				return r.zero.insert(n, v, bit-1)
+			}
+			if bitcurrent == 1 {
+				r.one.key = r.key
+				r.one.keyset = true
+				r.key = 0
+				return r.one.insert(n, v, bit-1)
+			}
+		} else {
+			// not equal, branch and fill and return	
+			println("not equal, branch and fill and return")
+			r.zero = &Radix{nil, nil, 0, false, "", false}
+			r.one = &Radix{nil, nil, 0, false, "", false}
+			r.internal = true	// current node, becomes intermediate
+			r.keyset = false
+			if bitcurrent == 0 {
+				// bitnew == 1
+				r.zero.key = r.key
+				r.zero.keyset = true
+				r.one.key = n
+				r.one.keyset = true
+				r.key = 0
+				return r.one
+			}
+			if bitcurrent == 1 {
+				// bitnew == 0
+				r.one.key = r.key
+				r.one.keyset = true
+				r.zero.key = n
+				r.zero.keyset = true
+				r.key = 0
+				return r.zero
+			}
+		}
 	}
 	return nil
 }
@@ -66,5 +114,6 @@ func (r *Radix) insert(n uint64, v string, bit uint) *Radix {
 // Return bit k from n. We count from the right, MSB left.
 // So k = 0 is the last bit on the left and k = 63 is the first bit on the right.
 func bitK(n uint64, k uint) byte {
+	println("bitting", n, "bit #", k)
 	return byte((n & (1 << k)) >> k)
 }
