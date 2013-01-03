@@ -16,7 +16,7 @@ import (
 
 const bitSize = 64 // length in bits of the key
 
-// Radix implements a radix tree. Key is exported, but should not be set. TODO(mg) better.
+// Radix implements a radix tree.
 type Radix struct {
 	branch   [2]*Radix // branch[0] is left branch for 0, and branch[1] the right for 1
 	Key      uint64    // The key under which this value is stored.

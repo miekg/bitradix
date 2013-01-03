@@ -37,6 +37,15 @@ func TestFindExact(t *testing.T) {
 	}
 }
 
+func TestFind(t *testing.T) {
+	r := New()
+	r.Insert(0x08, 2001)	// This is a /n address 00...001000
+	r.Insert(0x09, 2001)	// This is also a /n    00...001001
+
+	x := r.Find(0x04)  // Look for /n+1 00..000100
+	println("key", x.Key, "value", x.Value)
+}
+
 type bittest struct {
 	value uint64
 	bit   uint
