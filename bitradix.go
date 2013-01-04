@@ -19,7 +19,7 @@ const bitSize = 64 // length in bits of the key
 // Radix implements a radix tree.
 type Radix struct {
 	branch   [2]*Radix // branch[0] is left branch for 0, and branch[1] the right for 1
-	Key      uint64    // The key under which this value is stored.
+	key      uint64    // The key under which this value is stored.
 	set      bool      // true if the key has been set
 	Value    uint32    // The value stored.
 	internal bool      // internal node
@@ -28,6 +28,11 @@ type Radix struct {
 // New returns an empty, initialized Radix tree.
 func New() *Radix {
 	return &Radix{[2]*Radix{nil, nil}, 0, false, 0, false}
+}
+
+// Key returns the key under which this node is stored.
+func (r *Radix) Key() uint64 {
+	return r.key
 }
 
 // Insert inserts a new value in the tree r. It returns the inserted node.
@@ -51,6 +56,10 @@ func (r *Radix) String() string {
 	return r.str("")
 }
 
+func (r *Radix) Do(f func(uint64)) {
+
+}
+
 // Implement insert
 func (r *Radix) insert(n uint64, v uint32, bit uint) *Radix {
 	// if bit == 0 ? TODO(mg) When does that happen
@@ -62,7 +71,7 @@ func (r *Radix) insert(n uint64, v uint32, bit uint) *Radix {
 		// External node, (optional) key, no branches
 		if !r.set {
 			r.set = true
-			r.Key = n
+			r.key = n
 			r.Value = v
 			return r
 		}
@@ -72,24 +81,24 @@ func (r *Radix) insert(n uint64, v uint32, bit uint) *Radix {
 		r.internal = true
 		r.set = false
 
-		bcur := bitK(r.Key, bit)
+		bcur := bitK(r.key, bit)
 		bnew := bitK(n, bit)
 		if bcur == bnew {
 			// "fill" the correct node, with the current key - and call ourselves
-			r.branch[bcur].Key = r.Key
+			r.branch[bcur].key = r.key
 			r.branch[bcur].Value = r.Value
 			r.branch[bcur].set = true
-			r.Key = 0
+			r.key = 0
 			return r.branch[bcur].insert(n, v, bit-1)
 		}
 		// bcur = 0, bnew == 1 or vice versa
-		r.branch[bcur].Key = r.Key
+		r.branch[bcur].key = r.key
 		r.branch[bcur].Value = r.Value
 		r.branch[bcur].set = true
-		r.branch[bnew].Key = n
+		r.branch[bnew].key = n
 		r.branch[bnew].Value = v
 		r.branch[bnew].set = true
-		r.Key = 0
+		r.key = 0
 		return r.branch[bnew]
 	}
 	panic("bitradix: not reached")
@@ -113,7 +122,7 @@ func (r *Radix) find(n uint64, bit uint) *Radix {
 func (r *Radix) str(indent string) (s string) {
 	s += indent
 	if r.set {
-		s += strconv.Itoa(int(r.Key)) + ":" +
+		s += strconv.Itoa(int(r.key)) + ":" +
 			strconv.Itoa(int(r.Value)) + "\n" + indent
 	} else {
 		s += "<nil>\n" + indent
