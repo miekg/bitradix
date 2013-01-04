@@ -80,7 +80,7 @@ func TestFindIP(t *testing.T) {
 	r := New()
 	// not a map to have influence on the order
 	addRoute(t, r, "10.0.0.2/8", 10)
-	addRoute(t, r, "10.20.0.0/14", 20)
+//	addRoute(t, r, "10.20.0.0/14", 20)
 	addRoute(t, r, "10.21.0.0/16", 21)
 	addRoute(t, r, "192.168.0.0/16", 192)
 	addRoute(t, r, "192.168.2.0/24", 1922)

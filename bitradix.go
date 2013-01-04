@@ -132,11 +132,7 @@ func (r *Radix) insert(n uint64, v uint32, bit uint) *Radix {
 }
 
 func (r *Radix) find(n uint64, bit uint, step int) (*Radix, int) {
-	// TODO(mg): still not sure about this
-//	if bit == 0 {
-//		println("bit nul")
-//		return r, step
-//	}
+	// TODO(mg): isnt step = bitSize - bit?
 	switch r.internal {
 	case true:
 		// Internal node, no key, continue in the right branch
