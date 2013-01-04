@@ -56,8 +56,13 @@ func (r *Radix) String() string {
 	return r.str("")
 }
 
-func (r *Radix) Do(f func(uint64)) {
-
+// Do traverses the tree r in depth-first order. For each visited node,
+// the function f is called.
+func (r *Radix) Do(f func(*Radix)) {
+	f(r)
+	for _, branch := range r.branch {
+		branch.Do(f)
+	}
 }
 
 // Implement insert
