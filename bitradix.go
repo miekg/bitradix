@@ -51,6 +51,7 @@ func (r *Radix) Internal() bool {
 // Insert inserts a new value in the tree r. It returns the inserted node.
 // r must be the root of the tree.
 func (r *Radix) Insert(n uint64, v uint32) *Radix {
+	fmt.Printf("inserting %0b\n", n)
 	return r.insert(n, v, bitSize-1)
 }
 
@@ -82,7 +83,6 @@ func (r *Radix) Do(f func(*Radix)) {
 
 // Implement insert
 func (r *Radix) insert(n uint64, v uint32, bit uint) *Radix {
-	fmt.Printf("inserting %0b\n", n)
 	switch r.internal {
 	case true:
 		// Internal node, no key. With branches, walk the branches.
