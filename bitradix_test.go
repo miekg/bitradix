@@ -30,7 +30,7 @@ func TestFindExact(t *testing.T) {
 		r.Insert(k, v)
 	}
 	for k, v := range tests {
-		if x := r.Find(k); x.Value != v {
+		if x, _ := r.Find(k); x.Value != v {
 			t.Logf("Expected %d, got %d for %d\n", v, x.Value, k)
 			t.Fail()
 		}
@@ -43,8 +43,8 @@ func TestFind(t *testing.T) {
 	r.Insert(0x09, 2001)	// This is also a /n    00...001001
 
 	// Longest common prefix
-	x := r.Find(0xa)  // Look for /n 00..001010
-	println("key", x.key, "value", x.Value)
+	x, s := r.Find(0xa)  // Look for /n 00..001010
+	println("key", x.key, "value", x.Value, "steps", s)
 }
 
 type bittest struct {
