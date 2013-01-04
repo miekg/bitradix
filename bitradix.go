@@ -11,6 +11,7 @@ package bitradix
 // http://faculty.simpson.edu/lydia.sinapova/www/cmsc250/LN250_Weiss/L08-Radix.htm
 
 import (
+	"fmt"
 	"strconv"
 )
 
@@ -81,7 +82,7 @@ func (r *Radix) Do(f func(*Radix)) {
 
 // Implement insert
 func (r *Radix) insert(n uint64, v uint32, bit uint) *Radix {
-	// if bit == 0 ? TODO(mg) When does that happen
+	fmt.Printf("inserting %0b\n", n)
 	switch r.internal {
 	case true:
 		// Internal node, no key. With branches, walk the branches.
@@ -94,6 +95,11 @@ func (r *Radix) insert(n uint64, v uint32, bit uint) *Radix {
 			r.Value = v
 			return r
 		}
+		if bit == 0 {
+			// the value is set, and we looking at the last bit
+			return r
+		}
+
 		// create new branches, and go from there
 		r.branch[0], r.branch[1] = New(), New()
 		// Current node, becomes an intermediate node
