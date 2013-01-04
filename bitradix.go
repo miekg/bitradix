@@ -35,6 +35,18 @@ func (r *Radix) Key() uint64 {
 	return r.key
 }
 
+// Set returns if the key has been set for this node. If set is false
+// the meaning of the key is undefined.
+func (r *Radix) Set() bool {
+	return r.set
+}
+
+// Internal returns true is r is an internal node, when false is returned
+// the node is a leaf node.
+func (r *Radix) Internal() bool {
+	return r.internal
+}
+
 // Insert inserts a new value in the tree r. It returns the inserted node.
 // r must be the root of the tree.
 func (r *Radix) Insert(n uint64, v uint32) *Radix {
@@ -47,9 +59,11 @@ func (r *Radix) Remove(n uint64) *Radix {
 	return nil
 }
 
-// Find searches the tree for the key n. It returns the node found. 
-func (r *Radix) Find(n uint64) *Radix {
-	return r.find(n, bitSize-1)
+// Find searches the tree for the key n. It returns the node found,
+// and the number of branches taken. The later is the longest common
+// prefix.
+func (r *Radix) Find(n uint64) (*Radix, int) {
+	return r.find(n, bitSize-1, 0)
 }
 
 func (r *Radix) String() string {
@@ -109,17 +123,14 @@ func (r *Radix) insert(n uint64, v uint32, bit uint) *Radix {
 	panic("bitradix: not reached")
 }
 
-func (r *Radix) find(n uint64, bit uint) *Radix {
+func (r *Radix) find(n uint64, bit uint, step int) (*Radix, int) {
 	// if bit == 0, return the current node?? Also see comment in r.insert()
 	switch r.internal {
 	case true:
 		// Internal node, no key, continue in the right branch
-		return r.branch[bitK(n, bit)].find(n, bit-1)
+		return r.branch[bitK(n, bit)].find(n, bit-1, step+1)
 	case false:
-		if r.set {
-			return r
-		}
-		return nil
+		return r, step
 	}
 	panic("bitradix: not reached")
 }

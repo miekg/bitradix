@@ -42,7 +42,8 @@ func TestFind(t *testing.T) {
 	r.Insert(0x08, 2001)	// This is a /n address 00...001000
 	r.Insert(0x09, 2001)	// This is also a /n    00...001001
 
-	x := r.Find(0x04)  // Look for /n+1 00..000100
+	// Longest common prefix
+	x := r.Find(0xa)  // Look for /n 00..001010
 	println("key", x.key, "value", x.Value)
 }
 
