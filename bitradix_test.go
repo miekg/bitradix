@@ -52,22 +52,24 @@ func TestFindExact(t *testing.T) {
 }
 
 // Test with "real-life" ip addresses
-func ipToUint(ip net.IP) (i uint64) {
+func ipToUint(t *testing.T, ip net.IP) (i uint64) {
 	ip = ip.To4()
 	fv := reflect.ValueOf(&i).Elem()
 	fv.SetUint(uint64(uint32(ip[0])<<24 | uint32(ip[1])<<16 | uint32(ip[2])<<8 | uint32(ip[+3])))
+	t.Logf("Bit %08b\n", i)
 	return
 }
 
 func addRoute(t *testing.T, r *Radix, s string, asn uint32) {
 	t.Logf("Route %s, AS %d\n", s, asn)
 	_, ipnet, _ := net.ParseCIDR(s)
-	r.Insert(ipToUint(ipnet.IP), asn)
+	r.Insert(ipToUint(t, ipnet.IP), asn)
 }
 
-func findRoute(r*Radix, s string) uint32 {
+func findRoute(t *testing.T, r *Radix, s string) uint32 {
 	_, ipnet, _ := net.ParseCIDR(s)
-	node, _ := r.Find(ipToUint(ipnet.IP)) // discard step
+	t.Logf("Search %s\n", s)
+	node, _ := r.Find(ipToUint(t, ipnet.IP)) // discard step
 //	if node == nil {
 //		return 0
 //	}
@@ -76,6 +78,7 @@ func findRoute(r*Radix, s string) uint32 {
 
 func TestFindIP(t *testing.T) {
 	r := New()
+	// not a map to have influence on the order
 	addRoute(t, r, "10.0.0.2/8", 10)
 	addRoute(t, r, "10.20.0.0/14", 20)
 	addRoute(t, r, "10.21.0.0/16", 21)
@@ -92,7 +95,7 @@ func TestFindIP(t *testing.T) {
 	}
 
 	for ip, asn := range testips {
-		if x := findRoute(r, ip); asn != x {
+		if x := findRoute(t, r, ip); asn != x {
 			t.Logf("Expected %d, got %d for %s\n", asn, x, ip)
 			t.Fail()
 		}
