@@ -51,7 +51,7 @@ func (r *Radix) Internal() bool {
 // Insert inserts a new value in the tree r. It returns the inserted node.
 // r must be the root of the tree.
 func (r *Radix) Insert(n uint64, v uint32) *Radix {
-	fmt.Printf("inserting %0b\n", n)
+	fmt.Printf("inserting %08b for %d\n", n, v)
 	return r.insert(n, v, bitSize-1)
 }
 
@@ -109,14 +109,17 @@ func (r *Radix) insert(n uint64, v uint32, bit uint) *Radix {
 		bcur := bitK(r.key, bit)
 		bnew := bitK(n, bit)
 		if bcur == bnew {
+		//fmt.Printf("bcur %d %d bnew %d %d\n", bcur, r.Value, bnew, v)
 			// "fill" the correct node, with the current key - and call ourselves
 			r.branch[bcur].key = r.key
 			r.branch[bcur].Value = r.Value
 			r.branch[bcur].set = true
 			r.key = 0
-			return r.branch[bcur].insert(n, v, bit-1)
+			r.Value = 0
+			return r.branch[bnew].insert(n, v, bit-1)
 		}
 		// bcur = 0, bnew == 1 or vice versa
+		fmt.Printf("bcur %d %d bnew %d %d\n", bcur, r.Value, bnew, v)
 		r.branch[bcur].key = r.key
 		r.branch[bcur].Value = r.Value
 		r.branch[bcur].set = true
@@ -124,6 +127,7 @@ func (r *Radix) insert(n uint64, v uint32, bit uint) *Radix {
 		r.branch[bnew].Value = v
 		r.branch[bnew].set = true
 		r.key = 0
+		r.Value = 0
 		return r.branch[bnew]
 	}
 	panic("bitradix: not reached")

@@ -15,7 +15,7 @@ func TestInsert(t *testing.T) {
 	r := New()
 	for key, value := range tests {
 		if x := r.Insert(key, value); x.Value != value {
-			t.Logf("Expected %d, got %d for %d\n", value, x.Value, key)
+			t.Logf("Expected %d, got %d for %d (node type %v)\n", value, x.Value, key, x.Internal())
 			t.Fail()
 		}
 	}
@@ -33,7 +33,7 @@ func TestFindExact(t *testing.T) {
 	}
 	for k, v := range tests {
 		if x, _ := r.Find(k); x.Value != v {
-			t.Logf("Expected %d, got %d for %d\n", v, x.Value, k)
+			t.Logf("Expected %d, got %d for %d (node type %v)\n", v, x.Value, k, x.Internal())
 			t.Fail()
 		}
 	}
