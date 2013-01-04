@@ -11,7 +11,6 @@ package bitradix
 // http://faculty.simpson.edu/lydia.sinapova/www/cmsc250/LN250_Weiss/L08-Radix.htm
 
 import (
-	"fmt"
 	"strconv"
 )
 
@@ -51,7 +50,6 @@ func (r *Radix) Internal() bool {
 // Insert inserts a new value in the tree r. It returns the inserted node.
 // r must be the root of the tree.
 func (r *Radix) Insert(n uint64, v uint32) *Radix {
-	fmt.Printf("inserting %08b for %d\n", n, v)
 	return r.insert(n, v, bitSize-1)
 }
 
@@ -65,7 +63,6 @@ func (r *Radix) Remove(n uint64) *Radix {
 // and the number of branches taken. The later is the longest common
 // prefix.
 func (r *Radix) Find(n uint64) (*Radix, int) {
-	fmt.Printf("finding   %08b\n", n)
 	return r.find(n, bitSize-1, 0)
 }
 
@@ -113,7 +110,6 @@ func (r *Radix) insert(n uint64, v uint32, bit uint) *Radix {
 			r.key = 0
 			r.Value = 0
 			if bit == 0 {
-				println("bit nul equal", bit)
 				r.branch[bnew].key = n
 				r.branch[bnew].Value = v
 				r.branch[bnew].set = true
@@ -137,16 +133,15 @@ func (r *Radix) insert(n uint64, v uint32, bit uint) *Radix {
 
 func (r *Radix) find(n uint64, bit uint, step int) (*Radix, int) {
 	// TODO(mg): still not sure about this
-	if bit == 0 {
-		println("bit nul")
+//	if bit == 0 {
+//		println("bit nul")
 //		return r, step
-	}
+//	}
 	switch r.internal {
 	case true:
 		// Internal node, no key, continue in the right branch
 		return r.branch[bitK(n, bit)].find(n, bit-1, step+1)
 	case false:
-		println("returning", r.Key())
 		return r, step
 	}
 	panic("bitradix: not reached")
