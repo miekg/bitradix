@@ -6,6 +6,8 @@ import (
 	"testing"
 )
 
+// Test multiple insertions under the same key
+
 func TestInsert(t *testing.T) {
 	tests := map[uint64]uint32{
 		0x08: 2012,
@@ -18,6 +20,16 @@ func TestInsert(t *testing.T) {
 			t.Logf("Expected %d, got %d for %d (node type %v)\n", value, x.Value, key, x.Internal())
 			t.Fail()
 		}
+	}
+}
+
+func TestInsertIdempotent(t *testing.T) {
+	r := New()
+	r.Insert(0x08, 2012)
+	r.Insert(0x08, 2013)
+	if x, _ := r.Find(0x08); x.Value != 2013 {
+		t.Logf("Expected %d, got %d for %d\n", 2013, x.Value, 0x08)
+		t.Fail()
 	}
 }
 
@@ -47,28 +59,29 @@ func ipToUint(ip net.IP) (i uint64) {
 	return
 }
 
-func addRoute(t *Radix, s string, asn uint32) {
+func addRoute(t *testing.T, r *Radix, s string, asn uint32) {
+	t.Logf("Route %s, AS %d\n", s, asn)
 	_, ipnet, _ := net.ParseCIDR(s)
-	t.Insert(ipToUint(ipnet.IP), asn)
+	r.Insert(ipToUint(ipnet.IP), asn)
 }
 
-func findRoute(t *Radix, s string) uint32 {
+func findRoute(r*Radix, s string) uint32 {
 	_, ipnet, _ := net.ParseCIDR(s)
-	node, _ := t.Find(ipToUint(ipnet.IP)) // discard step
-	if node == nil {
-		return 0
-	}
+	node, _ := r.Find(ipToUint(ipnet.IP)) // discard step
+//	if node == nil {
+//		return 0
+//	}
 	return node.Value
 }
 
 func TestFindIP(t *testing.T) {
-	testroutes := map[string]uint32{
-		"10.0.0.2/8":     10,
-		"10.20.0.0/14":   20,
-		"10.21.0.0/16":   21,
-		"192.168.0.0/16": 192,
-		"192.168.2.0/24": 1922,
-	}
+	r := New()
+	addRoute(t, r, "10.0.0.2/8", 10)
+	addRoute(t, r, "10.20.0.0/14", 20)
+	addRoute(t, r, "10.21.0.0/16", 21)
+	addRoute(t, r, "192.168.0.0/16", 192)
+	addRoute(t, r, "192.168.2.0/24", 1922)
+
 	testips := map[string]uint32{
 		"10.20.1.2/32":   20,
 		"10.22.1.2/32":   20,
@@ -78,10 +91,6 @@ func TestFindIP(t *testing.T) {
 		"230.0.0.1/32":   0,
 	}
 
-	r := New()
-	for route, asn := range testroutes {
-		addRoute(r, route, asn)
-	}
 	for ip, asn := range testips {
 		if x := findRoute(r, ip); asn != x {
 			t.Logf("Expected %d, got %d for %s\n", asn, x, ip)

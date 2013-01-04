@@ -65,6 +65,7 @@ func (r *Radix) Remove(n uint64) *Radix {
 // and the number of branches taken. The later is the longest common
 // prefix.
 func (r *Radix) Find(n uint64) (*Radix, int) {
+	fmt.Printf("finding   %08b\n", n)
 	return r.find(n, bitSize-1, 0)
 }
 
@@ -95,10 +96,6 @@ func (r *Radix) insert(n uint64, v uint32, bit uint) *Radix {
 			r.Value = v
 			return r
 		}
-		if bit == 0 {
-			// the value is set, and we looking at the last bit
-			return r
-		}
 
 		// create new branches, and go from there
 		r.branch[0], r.branch[1] = New(), New()
@@ -109,17 +106,22 @@ func (r *Radix) insert(n uint64, v uint32, bit uint) *Radix {
 		bcur := bitK(r.key, bit)
 		bnew := bitK(n, bit)
 		if bcur == bnew {
-		//fmt.Printf("bcur %d %d bnew %d %d\n", bcur, r.Value, bnew, v)
 			// "fill" the correct node, with the current key - and call ourselves
 			r.branch[bcur].key = r.key
 			r.branch[bcur].Value = r.Value
 			r.branch[bcur].set = true
 			r.key = 0
 			r.Value = 0
+			if bit == 0 {
+				println("bit nul equal", bit)
+				r.branch[bnew].key = n
+				r.branch[bnew].Value = v
+				r.branch[bnew].set = true
+				return r.branch[bnew]
+			}
 			return r.branch[bnew].insert(n, v, bit-1)
 		}
 		// bcur = 0, bnew == 1 or vice versa
-		fmt.Printf("bcur %d %d bnew %d %d\n", bcur, r.Value, bnew, v)
 		r.branch[bcur].key = r.key
 		r.branch[bcur].Value = r.Value
 		r.branch[bcur].set = true
@@ -134,12 +136,17 @@ func (r *Radix) insert(n uint64, v uint32, bit uint) *Radix {
 }
 
 func (r *Radix) find(n uint64, bit uint, step int) (*Radix, int) {
-	// if bit == 0, return the current node?? Also see comment in r.insert()
+	// TODO(mg): still not sure about this
+	if bit == 0 {
+		println("bit nul")
+//		return r, step
+	}
 	switch r.internal {
 	case true:
 		// Internal node, no key, continue in the right branch
 		return r.branch[bitK(n, bit)].find(n, bit-1, step+1)
 	case false:
+		println("returning", r.Key())
 		return r, step
 	}
 	panic("bitradix: not reached")
