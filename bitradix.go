@@ -66,10 +66,6 @@ func (r *Radix) Find(n uint64) (*Radix, int) {
 	return r.find(n, bitSize-1)
 }
 
-func (r *Radix) String() string {
-	return r.str("")
-}
-
 // Do traverses the tree r in depth-first order. For each visited node,
 // the function f is called.
 func (r *Radix) Do(f func(*Radix)) {
@@ -140,21 +136,6 @@ func (r *Radix) find(n uint64, bit uint) (*Radix, int) {
 		return r, int(bitSize - bit)
 	}
 	panic("bitradix: not reached")
-}
-
-func (r *Radix) str(indent string) (s string) {
-	s += indent
-	if r.set {
-		s += strconv.Itoa(int(r.key)) + ":" +
-			strconv.Itoa(int(r.Value)) + "\n" + indent
-	} else {
-		s += "<nil>\n" + indent
-	}
-	if r.internal {
-		s += "0: " + r.branch[0].str(indent+" ")
-		s += "1: " + r.branch[1].str(indent+" ")
-	}
-	return s
 }
 
 // From: http://stackoverflow.com/questions/2249731/how-to-get-bit-by-bit-data-from-a-integer-value-in-c
