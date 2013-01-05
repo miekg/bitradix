@@ -70,9 +70,9 @@ func findRoute(t *testing.T, r *Radix, s string) uint32 {
 	_, ipnet, _ := net.ParseCIDR(s)
 	t.Logf("Search %s\n", s)
 	node, _ := r.Find(ipToUint(t, ipnet.IP)) // discard step
-//	if node == nil {
-//		return 0
-//	}
+	//	if node == nil {
+	//		return 0
+	//	}
 	return node.Value
 }
 
@@ -109,8 +109,8 @@ func TestFindIPShort(t *testing.T) {
 	addRoute(t, r, "10.20.0.0/14", 20)
 
 	testips := map[string]uint32{
-		"10.20.1.2/32":   20,
-		"10.19.0.1/32":   10,
+		"10.20.1.2/32": 20,
+		"10.19.0.1/32": 10,
 	}
 
 	for ip, asn := range testips {
