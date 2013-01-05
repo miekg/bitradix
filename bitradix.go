@@ -63,7 +63,7 @@ func (r *Radix) Remove(n uint64) *Radix {
 // and the number of branches taken. The later is the longest common
 // prefix.
 func (r *Radix) Find(n uint64) (*Radix, int) {
-	return r.find(n, bitSize-1, 0)
+	return r.find(n, bitSize-1)
 }
 
 func (r *Radix) String() string {
@@ -131,14 +131,13 @@ func (r *Radix) insert(n uint64, v uint32, bit uint) *Radix {
 	panic("bitradix: not reached")
 }
 
-func (r *Radix) find(n uint64, bit uint, step int) (*Radix, int) {
-	// TODO(mg): isnt step = bitSize - bit?
+func (r *Radix) find(n uint64, bit uint) (*Radix, int) {
 	switch r.internal {
 	case true:
 		// Internal node, no key, continue in the right branch
-		return r.branch[bitK(n, bit)].find(n, bit-1, step+1)
+		return r.branch[bitK(n, bit)].find(n, bit-1)
 	case false:
-		return r, step
+		return r, int(bitSize - bit)
 	}
 	panic("bitradix: not reached")
 }
