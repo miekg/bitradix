@@ -80,7 +80,7 @@ func TestFindIP(t *testing.T) {
 	r := New()
 	// not a map to have influence on the order
 	addRoute(t, r, "10.0.0.2/8", 10)
-//	addRoute(t, r, "10.20.0.0/14", 20)
+	addRoute(t, r, "10.20.0.0/14", 20)
 	addRoute(t, r, "10.21.0.0/16", 21)
 	addRoute(t, r, "192.168.0.0/16", 192)
 	addRoute(t, r, "192.168.2.0/24", 1922)
@@ -92,6 +92,25 @@ func TestFindIP(t *testing.T) {
 		"10.21.0.1/32":   21,
 		"192.168.2.3/32": 1922,
 		"230.0.0.1/32":   0,
+	}
+
+	for ip, asn := range testips {
+		if x := findRoute(t, r, ip); asn != x {
+			t.Logf("Expected %d, got %d for %s\n", asn, x, ip)
+			t.Fail()
+		}
+	}
+}
+
+func TestFindIPShort(t *testing.T) {
+	r := New()
+	// not a map to have influence on the order
+	addRoute(t, r, "10.0.0.2/8", 10)
+	addRoute(t, r, "10.20.0.0/14", 20)
+
+	testips := map[string]uint32{
+		"10.20.1.2/32":   20,
+		"10.19.0.1/32":   10,
 	}
 
 	for ip, asn := range testips {
