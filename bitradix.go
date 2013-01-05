@@ -7,12 +7,12 @@
 //    October 1968
 package bitradix
 
-// With help from:
-// http://faculty.simpson.edu/lydia.sinapova/www/cmsc250/LN250_Weiss/L08-Radix.htm
-
 import (
 	"strconv"
 )
+
+// With help from:
+// http://faculty.simpson.edu/lydia.sinapova/www/cmsc250/LN250_Weiss/L08-Radix.htm
 
 const bitSize = 64 // length in bits of the key
 
@@ -36,7 +36,7 @@ func (r *Radix) Key() uint64 {
 }
 
 // Set returns if the key has been set for this node. If set is false
-// the meaning of the key is undefined.
+// the value of the key is undefined.
 func (r *Radix) Set() bool {
 	return r.set
 }
@@ -71,8 +71,15 @@ func (r *Radix) Find(n uint64) (*Radix, int) {
 func (r *Radix) Do(f func(*Radix)) {
 	f(r)
 	for _, branch := range r.branch {
-		branch.Do(f)
+		if branch != nil {
+			branch.Do(f)
+		}
 	}
+}
+
+// String returns a string representation of the tree.
+func (r *Radix) String() string {
+	return r.stringHelper("")
 }
 
 // Implement insert
@@ -136,6 +143,21 @@ func (r *Radix) find(n uint64, bit uint) (*Radix, int) {
 		return r, int(bitSize - bit)
 	}
 	panic("bitradix: not reached")
+}
+
+func (r *Radix) stringHelper(indent string) (s string) {
+	if !r.set {
+		s = indent + "<nil>:"
+	} else {
+		s = indent + " '" + strconv.FormatUint(r.key, 2) + "':"
+	}
+	s += "\n"
+	for i, b := range r.branch {
+		if b != nil {
+			s += indent + strconv.Itoa(i) + ":" + b.stringHelper(" "+indent)
+		}
+	}
+	return s
 }
 
 // From: http://stackoverflow.com/questions/2249731/how-to-get-bit-by-bit-data-from-a-integer-value-in-c
