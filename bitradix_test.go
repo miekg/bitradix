@@ -108,7 +108,7 @@ func TestFindIPShort(t *testing.T) {
 	addRoute(t, r, "10.0.0.2/8", 10)
 	addRoute(t, r, "10.20.0.0/14", 20)
 
-	t.Logf("%s\n", r.String())
+	t.Logf("%s\n", r.string())
 
 	testips := map[string]uint32{
 		"10.20.1.2/32": 20,

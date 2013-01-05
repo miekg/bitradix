@@ -77,8 +77,7 @@ func (r *Radix) Do(f func(*Radix)) {
 	}
 }
 
-// String returns a string representation of the tree.
-func (r *Radix) String() string {
+func (r *Radix) string() string {
 	return r.stringHelper("")
 }
 
