@@ -47,22 +47,23 @@ func (r *Radix) Internal() bool {
 	return r.internal
 }
 
-// Insert inserts a new value in the tree r. It returns the inserted node.
-// r must be the root of the tree.
-func (r *Radix) Insert(n uint32, v uint32) *Radix {
+// Insert inserts a new value n in the tree r. The first size bits are used
+// of the value n.
+// It returns the inserted node, r must be the root of the tree.
+func (r *Radix) Insert(n uint32, bits int, v uint32) *Radix {
 	return r.insert(n, v, bitSize-1)
 }
 
 // Remove removes a value from the tree r. It returns the node removed, or nil
 // when nothing is found. r must be the root of the tree.
-func (r *Radix) Remove(n uint32) *Radix {
+func (r *Radix) Remove(n uint32, bits int) *Radix {
 	return nil
 }
 
 // Find searches the tree for the key n. It returns the node found,
 // and the number of branches taken. The later is the longest common
 // prefix.
-func (r *Radix) Find(n uint32) (*Radix, int) {
+func (r *Radix) Find(n uint32, bits int) (*Radix, int) {
 	return r.find(n, bitSize-1)
 }
 
@@ -78,10 +79,13 @@ func (r *Radix) Do(f func(*Radix)) {
 }
 
 // Implement insert
-func (r *Radix) insert(n uint32, v uint32, bit uint) *Radix {
+func (r *Radix) insert(n uint32, bits int, v uint32, bit uint) *Radix {
 	switch r.internal {
 	case true:
 		// Internal node, no key. With branches, walk the branches.
+		// if bits == bit {
+		// add a key to this node here
+		// }
 		return r.branch[bitK(n, bit)].insert(n, v, bit-1)
 	case false:
 		// External node, (optional) key, no branches
@@ -129,7 +133,7 @@ func (r *Radix) insert(n uint32, v uint32, bit uint) *Radix {
 	panic("bitradix: not reached")
 }
 
-func (r *Radix) find(n uint32, bit uint) (*Radix, int) {
+func (r *Radix) find(n uint32, bits int, bit uint) (*Radix, int) {
 	switch r.internal {
 	case true:
 		// Internal node, no key, continue in the right branch
