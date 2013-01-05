@@ -77,10 +77,6 @@ func (r *Radix) Do(f func(*Radix)) {
 	}
 }
 
-func (r *Radix) string() string {
-	return r.stringHelper("")
-}
-
 // Implement insert
 func (r *Radix) insert(n uint64, v uint32, bit uint) *Radix {
 	switch r.internal {
@@ -144,11 +140,15 @@ func (r *Radix) find(n uint64, bit uint) (*Radix, int) {
 	panic("bitradix: not reached")
 }
 
+func (r *Radix) string() string {
+	return r.stringHelper("")
+}
+
 func (r *Radix) stringHelper(indent string) (s string) {
-	if !r.set {
-		s = indent + "<nil>:"
+	if r.set {
+		s = indent + " '" + strconv.FormatUint(r.key, 2) + "':" + strconv.Itoa(int(r.Value))
 	} else {
-		s = indent + " '" + strconv.FormatUint(r.key, 2) + "':"
+		s = indent + "<nil>"
 	}
 	s += "\n"
 	for i, b := range r.branch {
