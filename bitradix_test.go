@@ -9,7 +9,7 @@ import (
 // Test multiple insertions under the same key
 
 func TestInsert(t *testing.T) {
-	tests := map[uint64]uint32{
+	tests := map[uint32]uint32{
 		0x08: 2012,
 		0x04: 2010,
 		0x09: 2013,
@@ -34,7 +34,7 @@ func TestInsertIdempotent(t *testing.T) {
 }
 
 func TestFindExact(t *testing.T) {
-	tests := map[uint64]uint32{
+	tests := map[uint32]uint32{
 		0x08: 2012,
 		0x04: 2010,
 		0x09: 2013,
@@ -52,24 +52,26 @@ func TestFindExact(t *testing.T) {
 }
 
 // Test with "real-life" ip addresses
-func ipToUint(t *testing.T, ip net.IP) (i uint64) {
-	ip = ip.To4()
+func ipToUint(t *testing.T, n *net.IPNet) (i uint32) {
+	ip := n.IP.To4()
+	ones, bits := n.Mask.Size()
+	t.Logf("bitlength mask %d %d\n", ones, bits)
 	fv := reflect.ValueOf(&i).Elem()
 	fv.SetUint(uint64(uint32(ip[0])<<24 | uint32(ip[1])<<16 | uint32(ip[2])<<8 | uint32(ip[+3])))
-	t.Logf("Bit %064b\n", i)
+	t.Logf("Bit %032b\n", i)
 	return
 }
 
 func addRoute(t *testing.T, r *Radix, s string, asn uint32) {
 	t.Logf("Route %s, AS %d\n", s, asn)
 	_, ipnet, _ := net.ParseCIDR(s)
-	r.Insert(ipToUint(t, ipnet.IP), asn)
+	r.Insert(ipToUint(t, ipnet), asn)
 }
 
 func findRoute(t *testing.T, r *Radix, s string) uint32 {
 	_, ipnet, _ := net.ParseCIDR(s)
 	t.Logf("Search %s\n", s)
-	node, _ := r.Find(ipToUint(t, ipnet.IP)) // discard step
+	node, _ := r.Find(ipToUint(t, ipnet)) // discard step
 	return node.Value
 }
 
@@ -124,7 +126,7 @@ func TestFindIPShort(t *testing.T) {
 }
 
 type bittest struct {
-	value uint64
+	value uint32
 	bit   uint
 }
 
@@ -135,7 +137,7 @@ func TestBitK(t *testing.T) {
 	}
 	for test, expected := range tests {
 		if x := bitK(test.value, test.bit); x != expected {
-			t.Logf("Expected %d for %064b (bit #%d), got %d\n", expected, test.value, test.bit, x)
+			t.Logf("Expected %d for %032b (bit #%d), got %d\n", expected, test.value, test.bit, x)
 			t.Fail()
 		}
 	}

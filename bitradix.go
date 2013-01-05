@@ -1,4 +1,4 @@
-// Package bitradix implements a radix tree that branches on the bits in a 64 bits key.
+// Package bitradix implements a radix tree that branches on the bits in a 32 bits key.
 // The value that can be stored is an unsigned 32 bit integer.
 //                                                                                                  
 // A radix tree is defined in:
@@ -14,12 +14,12 @@ import (
 // With help from:
 // http://faculty.simpson.edu/lydia.sinapova/www/cmsc250/LN250_Weiss/L08-Radix.htm
 
-const bitSize = 64 // length in bits of the key
+const bitSize = 32 // length in bits of the key
 
 // Radix implements a radix tree.
 type Radix struct {
 	branch   [2]*Radix // branch[0] is left branch for 0, and branch[1] the right for 1
-	key      uint64    // The key under which this value is stored.
+	key      uint32    // The key under which this value is stored.
 	set      bool      // true if the key has been set
 	Value    uint32    // The value stored.
 	internal bool      // internal node
@@ -31,7 +31,7 @@ func New() *Radix {
 }
 
 // Key returns the key under which this node is stored.
-func (r *Radix) Key() uint64 {
+func (r *Radix) Key() uint32 {
 	return r.key
 }
 
@@ -49,20 +49,20 @@ func (r *Radix) Internal() bool {
 
 // Insert inserts a new value in the tree r. It returns the inserted node.
 // r must be the root of the tree.
-func (r *Radix) Insert(n uint64, v uint32) *Radix {
+func (r *Radix) Insert(n uint32, v uint32) *Radix {
 	return r.insert(n, v, bitSize-1)
 }
 
 // Remove removes a value from the tree r. It returns the node removed, or nil
 // when nothing is found. r must be the root of the tree.
-func (r *Radix) Remove(n uint64) *Radix {
+func (r *Radix) Remove(n uint32) *Radix {
 	return nil
 }
 
 // Find searches the tree for the key n. It returns the node found,
 // and the number of branches taken. The later is the longest common
 // prefix.
-func (r *Radix) Find(n uint64) (*Radix, int) {
+func (r *Radix) Find(n uint32) (*Radix, int) {
 	return r.find(n, bitSize-1)
 }
 
@@ -78,7 +78,7 @@ func (r *Radix) Do(f func(*Radix)) {
 }
 
 // Implement insert
-func (r *Radix) insert(n uint64, v uint32, bit uint) *Radix {
+func (r *Radix) insert(n uint32, v uint32, bit uint) *Radix {
 	switch r.internal {
 	case true:
 		// Internal node, no key. With branches, walk the branches.
@@ -129,7 +129,7 @@ func (r *Radix) insert(n uint64, v uint32, bit uint) *Radix {
 	panic("bitradix: not reached")
 }
 
-func (r *Radix) find(n uint64, bit uint) (*Radix, int) {
+func (r *Radix) find(n uint32, bit uint) (*Radix, int) {
 	switch r.internal {
 	case true:
 		// Internal node, no key, continue in the right branch
@@ -146,7 +146,7 @@ func (r *Radix) string() string {
 
 func (r *Radix) stringHelper(indent string) (s string) {
 	if r.set {
-		s = indent + " '" + strconv.FormatUint(r.key, 2) + "':" + strconv.Itoa(int(r.Value))
+		s = indent + " '" + strconv.FormatUint(uint64(r.key), 2) + "':" + strconv.Itoa(int(r.Value))
 	} else {
 		s = indent + "<nil>"
 	}
@@ -163,6 +163,6 @@ func (r *Radix) stringHelper(indent string) (s string) {
 
 // Return bit k from n. We count from the right, MSB left.
 // So k = 0 is the last bit on the left and k = 63 is the first bit on the right.
-func bitK(n uint64, k uint) byte {
+func bitK(n uint32, k uint) byte {
 	return byte((n & (1 << k)) >> k)
 }
