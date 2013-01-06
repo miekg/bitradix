@@ -8,7 +8,7 @@
 package bitradix
 
 import (
-	"strconv"
+	"fmt"
 )
 
 // With help from:
@@ -51,6 +51,7 @@ func (r *Radix) Internal() bool {
 // and used to store the value v.
 // It returns the inserted node, r must be the root of the tree.
 func (r *Radix) Insert(n uint32, bits int, v uint32) *Radix {
+	println("INSERTING", n, v)
 	return r.insert(n, bits, v, bitSize-1)
 }
 
@@ -66,15 +67,39 @@ func (r *Radix) Find(n uint32, bits int) *Radix {
 	return r.find(n, bits, bitSize-1)
 }
 
-// Do traverses the tree r in depth-first order. For each visited node,
-// the function f is called.
-func (r *Radix) Do(f func(*Radix)) {
-	f(r)
-	for _, branch := range r.branch {
-		if branch != nil {
-			branch.Do(f)
+// Do traverses the tree r in breadth-first order. For each visited node,
+// the function f is called with the current node and the level. The root
+// level is zero.
+func (r *Radix) Do(f func(*Radix, int)) {
+	q := new(queue)
+
+	q.Push(&node{r, -1})
+	x := q.Pop()
+	for x != nil {
+		f(x.Radix, x.branch)
+		for i, branch := range x.Radix.branch {
+			println(i)
+			if branch != nil {
+				println("NODE")
+				q.Push(&node{branch, i})
+			}
 		}
+		x = q.Pop()
 	}
+}
+
+func (r *Radix) String() string {
+	return r.str(" ")
+}
+
+func (r *Radix) str(j string) string {
+	if r == nil {
+		return ""
+	}
+	s := fmt.Sprintf("%s %032b -> %d\n", j, r.key, r.Value)
+	s += r.branch[0].str(j + "")
+	s += r.branch[1].str(j + "")
+	return s
 }
 
 // Implement insert
@@ -82,6 +107,7 @@ func (r *Radix) insert(n uint32, bits int, v uint32, bit int) *Radix {
 	switch r.internal {
 	case true:
 		if bitSize-bits == bit { // we need to store a value here
+			println("Store here internal")
 			// TODO(mg): check previous value?
 			r.key = n
 			r.bits = bits
@@ -92,14 +118,20 @@ func (r *Radix) insert(n uint32, bits int, v uint32, bit int) *Radix {
 		// Internal node, no key. With branches, walk the branches.
 		return r.branch[bitK(n, bit)].insert(n, bits, v, bit-1)
 	case false:
+		println("external")
 		// External node, (optional) key, no branches
 		if r.bits == 0 { // nothing here yet, put something in
+			println("nothing here yet, put something in ", n, bits)
 			r.bits = bits
 			r.key = n
 			r.Value = v
 			return r
 		}
 		if bitSize-bits == bit { // seen all bits, put something here
+			println("seen all bits, put something here")
+			if r.bits != 0 {
+				println("something here ALREADY")
+			}
 			r.bits = bits
 			r.key = n
 			r.Value = v
@@ -112,16 +144,23 @@ func (r *Radix) insert(n uint32, bits int, v uint32, bit int) *Radix {
 
 		bcur := bitK(r.key, bit)
 		bnew := bitK(n, bit)
+		fmt.Printf("r.key %032b %d\n", r.key, bit)
+		fmt.Printf("n     %032b %d\n", n, bit)
+
+		println("bcur", bcur, "bnew", bnew)
 
 		switch x := bitSize - r.bits; true {
 		case x == bit: // current node needs to stay here
+			println("Current node needs to be kept here")
 			// put new stuff in the branch below
 			r.branch[bnew].key = n
 			r.branch[bnew].Value = v
 			r.branch[bnew].bits = bits
 			return r.branch[bnew]
 		case x < bit: // current node can be put one level down
+			println("Moving nodes down", r.key, r.bits, r.Value)
 			if bcur == bnew {
+				println("equal bits")
 				// "fill" the correct node, with the current key - and call ourselves
 				r.branch[bcur].key = r.key
 				r.branch[bcur].Value = r.Value
@@ -132,6 +171,7 @@ func (r *Radix) insert(n uint32, bits int, v uint32, bit int) *Radix {
 				return r.branch[bnew].insert(n, bits, v, bit-1)
 			}
 			// bcur = 0, bnew == 1 or vice versa
+			println("not equal, each in own branch")
 			r.branch[bcur].key = r.key
 			r.branch[bcur].Value = r.Value
 			r.branch[bcur].bits = r.bits
@@ -159,25 +199,6 @@ func (r *Radix) find(n uint32, bits, bit int) *Radix {
 		return r
 	}
 	panic("bitradix: not reached")
-}
-
-func (r *Radix) string() string {
-	return r.stringHelper("")
-}
-
-func (r *Radix) stringHelper(indent string) (s string) {
-	if r.bits != 0 {
-		s = indent + " '" + strconv.FormatUint(uint64(r.key), 2) + "':" + strconv.Itoa(int(r.Value))
-	} else {
-		s = indent + "<nil>"
-	}
-	s += "\n"
-	for i, b := range r.branch {
-		if b != nil {
-			s += indent + strconv.Itoa(i) + ":" + b.stringHelper(" "+indent)
-		}
-	}
-	return s
 }
 
 // From: http://stackoverflow.com/questions/2249731/how-to-get-bit-by-bit-data-from-a-integer-value-in-c

@@ -1,8 +1,8 @@
 package bitradix
 
 import (
-//	"net"
-//	"reflect"
+	//	"net"
+	//	"reflect"
 	"testing"
 )
 
@@ -14,7 +14,7 @@ func TestInsert(t *testing.T) {
 	}
 	r := New()
 	for key, value := range tests {
-		if x := r.Insert(key, 8, value); x.Value != value {
+		if x := r.Insert(key, 4, value); x.Value != value {
 			t.Logf("Expected %d, got %d for %d (node type %v)\n", value, x.Value, key, x.Internal())
 			t.Fail()
 		}
@@ -23,9 +23,9 @@ func TestInsert(t *testing.T) {
 
 func TestInsertIdempotent(t *testing.T) {
 	r := New()
-	r.Insert(0x08, 8, 2012)
-	r.Insert(0x08, 8, 2013)
-	if x := r.Find(0x08, 8); x.Value != 2013 {
+	r.Insert(0x08, 4, 2012)
+	r.Insert(0x08, 4, 2013)
+	if x := r.Find(0x08, 4); x.Value != 2013 {
 		t.Logf("Expected %d, got %d for %d\n", 2013, x.Value, 0x08)
 		t.Fail()
 	}
@@ -33,16 +33,20 @@ func TestInsertIdempotent(t *testing.T) {
 
 func TestFindExact(t *testing.T) {
 	tests := map[uint32]uint32{
-		0x08: 2012,
-		0x04: 2010,
-		0x09: 2013,
+		0x80000000: 2012,
+		0x40000000: 2010,
+		0x90000000: 2013,
 	}
 	r := New()
 	for k, v := range tests {
-		r.Insert(k, 8, v)
+		t.Logf("Tree after insert of %032b\n", k)
+		r.Insert(k, 5, v)
+		r.Do(func(r1 *Radix, i int) { t.Logf("(%2d): %032b -> %d\n", i, r1.key, r1.Value) })
+		t.Logf("\n------\n%s\n", r.String())
+
 	}
 	for k, v := range tests {
-		if x := r.Find(k, 8); x.Value != v {
+		if x := r.Find(k, 5); x.Value != v {
 			t.Logf("Expected %d, got %d for %d (node type %v)\n", v, x.Value, k, x.Internal())
 			t.Fail()
 		}
@@ -140,5 +144,21 @@ func TestBitK(t *testing.T) {
 			t.Logf("Expected %d for %032b (bit #%d), got %d\n", expected, test.value, test.bit, x)
 			t.Fail()
 		}
+	}
+}
+
+func TestQueue(t *testing.T) {
+	q := new(queue)
+	r := New()
+	r.Value = 10
+
+	q.Push(&node{r, -1})
+	if r1 := q.Pop(); r1.Value != 10 {
+		t.Logf("Expected %d, got %d\n", 10, r.Value)
+		t.Fail()
+	}
+	if r1 := q.Pop(); r1 != nil {
+		t.Logf("Expected nil, got %d\n", r.Value)
+		t.Fail()
 	}
 }
