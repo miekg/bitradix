@@ -1,12 +1,10 @@
 package bitradix
 
 import (
-	"net"
-	"reflect"
+//	"net"
+//	"reflect"
 	"testing"
 )
-
-// Test multiple insertions under the same key
 
 func TestInsert(t *testing.T) {
 	tests := map[uint32]uint32{
@@ -16,7 +14,7 @@ func TestInsert(t *testing.T) {
 	}
 	r := New()
 	for key, value := range tests {
-		if x := r.Insert(key, value); x.Value != value {
+		if x := r.Insert(key, 8, value); x.Value != value {
 			t.Logf("Expected %d, got %d for %d (node type %v)\n", value, x.Value, key, x.Internal())
 			t.Fail()
 		}
@@ -25,9 +23,9 @@ func TestInsert(t *testing.T) {
 
 func TestInsertIdempotent(t *testing.T) {
 	r := New()
-	r.Insert(0x08, 2012)
-	r.Insert(0x08, 2013)
-	if x, _ := r.Find(0x08); x.Value != 2013 {
+	r.Insert(0x08, 8, 2012)
+	r.Insert(0x08, 8, 2013)
+	if x := r.Find(0x08, 8); x.Value != 2013 {
 		t.Logf("Expected %d, got %d for %d\n", 2013, x.Value, 0x08)
 		t.Fail()
 	}
@@ -41,16 +39,17 @@ func TestFindExact(t *testing.T) {
 	}
 	r := New()
 	for k, v := range tests {
-		r.Insert(k, v)
+		r.Insert(k, 8, v)
 	}
 	for k, v := range tests {
-		if x, _ := r.Find(k); x.Value != v {
+		if x := r.Find(k, 8); x.Value != v {
 			t.Logf("Expected %d, got %d for %d (node type %v)\n", v, x.Value, k, x.Internal())
 			t.Fail()
 		}
 	}
 }
 
+/*
 // Test with "real-life" ip addresses
 func ipToUint(t *testing.T, n *net.IPNet) (i uint32) {
 	ip := n.IP.To4()
@@ -124,10 +123,11 @@ func TestFindIPShort(t *testing.T) {
 		}
 	}
 }
+*/
 
 type bittest struct {
 	value uint32
-	bit   uint
+	bit   int
 }
 
 func TestBitK(t *testing.T) {

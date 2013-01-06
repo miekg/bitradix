@@ -99,51 +99,53 @@ func (r *Radix) insert(n uint32, bits int, v uint32, bit int) *Radix {
 			r.Value = v
 			return r
 		}
+		if bitSize-bits == bit { // seen all bits, put something here
+			r.bits = bits
+			r.key = n
+			r.Value = v
+			return r
+		}
 
 		// create new branches, and go from there
 		r.branch[0], r.branch[1] = New(), New()
 		r.internal = true // becomes an internal node by definition
+
 		bcur := bitK(r.key, bit)
 		bnew := bitK(n, bit)
-		if bitSize-bits == bit {
 
-		}
-
-		// Current node, becomes an intermediate node, not always
 		switch x := bitSize - r.bits; true {
 		case x == bit: // current node needs to stay here
-
+			// put new stuff in the branch below
+			r.branch[bnew].key = n
+			r.branch[bnew].Value = v
+			r.branch[bnew].bits = bits
+			return r.branch[bnew]
 		case x < bit: // current node can be put one level down
-
+			if bcur == bnew {
+				// "fill" the correct node, with the current key - and call ourselves
+				r.branch[bcur].key = r.key
+				r.branch[bcur].Value = r.Value
+				r.branch[bcur].bits = r.bits
+				r.bits = 0
+				r.key = 0
+				r.Value = 0
+				return r.branch[bnew].insert(n, bits, v, bit-1)
+			}
+			// bcur = 0, bnew == 1 or vice versa
+			r.branch[bcur].key = r.key
+			r.branch[bcur].Value = r.Value
+			r.branch[bcur].bits = r.bits
+			r.branch[bnew].key = n
+			r.branch[bnew].Value = v
+			r.branch[bnew].bits = bits
+			r.key = 0
+			r.Value = 0
+			r.bits = 0
+			return r.branch[bnew]
 		case x > bit: // node is at the wrong spot
 			panic("bitradix: node put too far down")
 		}
 
-		if bcur == bnew {
-			// "fill" the correct node, with the current key - and call ourselves
-			r.branch[bcur].key = r.key
-			r.branch[bcur].Value = r.Value
-			r.branch[bcur].bits = r.bits
-			r.key = 0
-			r.Value = 0
-			if bit == 0 {
-				r.branch[bnew].key = n
-				r.branch[bnew].Value = v
-				r.branch[bnew].bits = bits
-				return r.branch[bnew]
-			}
-			return r.branch[bnew].insert(n, bits, v, bit-1)
-		}
-		// bcur = 0, bnew == 1 or vice versa
-		r.branch[bcur].key = r.key
-		r.branch[bcur].Value = r.Value
-		r.branch[bcur].bits = r.bits
-		r.branch[bnew].key = n
-		r.branch[bnew].Value = v
-		r.branch[bnew].bits = bits
-		r.key = 0
-		r.Value = 0
-		return r.branch[bnew]
 	}
 	panic("bitradix: not reached")
 }
