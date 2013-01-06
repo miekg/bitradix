@@ -19,15 +19,15 @@ const bitSize = 32 // length in bits of the key
 // Radix implements a radix tree.
 type Radix struct {
 	branch   [2]*Radix // branch[0] is left branch for 0, and branch[1] the right for 1
-	key      uint32    // The key under which this value is stored.
-	set      bool      // true if the key has been set
+	key      uint32    // the key under which this value is stored
+	bits     int       // the number of significant bits, if 0 the key has not been set.
 	Value    uint32    // The value stored.
 	internal bool      // internal node
 }
 
 // New returns an empty, initialized Radix tree.
 func New() *Radix {
-	return &Radix{[2]*Radix{nil, nil}, 0, false, 0, false}
+	return &Radix{[2]*Radix{nil, nil}, 0, 0, 0, false}
 }
 
 // Key returns the key under which this node is stored.
@@ -35,10 +35,10 @@ func (r *Radix) Key() uint32 {
 	return r.key
 }
 
-// Set returns if the key has been set for this node. If set is false
-// the value of the key is undefined.
-func (r *Radix) Set() bool {
-	return r.set
+// Bits returns the number of significant bits for the key.
+// A value of zero indicates a key that has not been set.
+func (r *Radix) Bits() int {
+	return r.bits
 }
 
 // Internal returns true is r is an internal node, when false is returned
@@ -47,11 +47,11 @@ func (r *Radix) Internal() bool {
 	return r.internal
 }
 
-// Insert inserts a new value n in the tree r. The first size bits are used
-// of the value n.
+// Insert inserts a new value n in the tree r. The first bits bits of n are significant
+// and used to store the value v.
 // It returns the inserted node, r must be the root of the tree.
 func (r *Radix) Insert(n uint32, bits int, v uint32) *Radix {
-	return r.insert(n, v, bitSize-1)
+	return r.insert(n, bits, v, bitSize-1)
 }
 
 // Remove removes a value from the tree r. It returns the node removed, or nil
@@ -60,11 +60,10 @@ func (r *Radix) Remove(n uint32, bits int) *Radix {
 	return nil
 }
 
-// Find searches the tree for the key n. It returns the node found,
-// and the number of branches taken. The later is the longest common
-// prefix.
-func (r *Radix) Find(n uint32, bits int) (*Radix, int) {
-	return r.find(n, bitSize-1)
+// Find searches the tree for the key n, where the first bits bits of n 
+// are significant. It returns the node found.
+func (r *Radix) Find(n uint32, bits int) *Radix {
+	return r.find(n, bits, bitSize-1)
 }
 
 // Do traverses the tree r in depth-first order. For each visited node,
@@ -79,18 +78,23 @@ func (r *Radix) Do(f func(*Radix)) {
 }
 
 // Implement insert
-func (r *Radix) insert(n uint32, bits int, v uint32, bit uint) *Radix {
+func (r *Radix) insert(n uint32, bits int, v uint32, bit int) *Radix {
 	switch r.internal {
 	case true:
+		if bitSize-bits == bit { // we need to store a value here
+			// TODO(mg): check previous value?
+			r.key = n
+			r.bits = bits
+			r.Value = v
+			// keep it internal
+			return r
+		}
 		// Internal node, no key. With branches, walk the branches.
-		// if bits == bit {
-		// add a key to this node here
-		// }
-		return r.branch[bitK(n, bit)].insert(n, v, bit-1)
+		return r.branch[bitK(n, bit)].insert(n, bits, v, bit-1)
 	case false:
 		// External node, (optional) key, no branches
-		if !r.set {
-			r.set = true
+		if r.bits == 0 { // nothing here yet, put something in
+			r.bits = bits
 			r.key = n
 			r.Value = v
 			return r
@@ -98,34 +102,45 @@ func (r *Radix) insert(n uint32, bits int, v uint32, bit uint) *Radix {
 
 		// create new branches, and go from there
 		r.branch[0], r.branch[1] = New(), New()
-		// Current node, becomes an intermediate node
-		r.internal = true
-		r.set = false
-
+		r.internal = true // becomes an internal node by definition
 		bcur := bitK(r.key, bit)
 		bnew := bitK(n, bit)
+		if bitSize-bits == bit {
+
+		}
+
+		// Current node, becomes an intermediate node, not always
+		switch x := bitSize - r.bits; true {
+		case x == bit: // current node needs to stay here
+
+		case x < bit: // current node can be put one level down
+
+		case x > bit: // node is at the wrong spot
+			panic("bitradix: node put too far down")
+		}
+
 		if bcur == bnew {
 			// "fill" the correct node, with the current key - and call ourselves
 			r.branch[bcur].key = r.key
 			r.branch[bcur].Value = r.Value
-			r.branch[bcur].set = true
+			r.branch[bcur].bits = r.bits
 			r.key = 0
 			r.Value = 0
 			if bit == 0 {
 				r.branch[bnew].key = n
 				r.branch[bnew].Value = v
-				r.branch[bnew].set = true
+				r.branch[bnew].bits = bits
 				return r.branch[bnew]
 			}
-			return r.branch[bnew].insert(n, v, bit-1)
+			return r.branch[bnew].insert(n, bits, v, bit-1)
 		}
 		// bcur = 0, bnew == 1 or vice versa
 		r.branch[bcur].key = r.key
 		r.branch[bcur].Value = r.Value
-		r.branch[bcur].set = true
+		r.branch[bcur].bits = r.bits
 		r.branch[bnew].key = n
 		r.branch[bnew].Value = v
-		r.branch[bnew].set = true
+		r.branch[bnew].bits = bits
 		r.key = 0
 		r.Value = 0
 		return r.branch[bnew]
@@ -133,13 +148,13 @@ func (r *Radix) insert(n uint32, bits int, v uint32, bit uint) *Radix {
 	panic("bitradix: not reached")
 }
 
-func (r *Radix) find(n uint32, bits int, bit uint) (*Radix, int) {
+func (r *Radix) find(n uint32, bits, bit int) *Radix {
 	switch r.internal {
 	case true:
 		// Internal node, no key, continue in the right branch
-		return r.branch[bitK(n, bit)].find(n, bit-1)
+		return r.branch[bitK(n, bit)].find(n, bits, bit-1)
 	case false:
-		return r, int(bitSize - bit)
+		return r
 	}
 	panic("bitradix: not reached")
 }
@@ -149,7 +164,7 @@ func (r *Radix) string() string {
 }
 
 func (r *Radix) stringHelper(indent string) (s string) {
-	if r.set {
+	if r.bits != 0 {
 		s = indent + " '" + strconv.FormatUint(uint64(r.key), 2) + "':" + strconv.Itoa(int(r.Value))
 	} else {
 		s = indent + "<nil>"
@@ -167,6 +182,6 @@ func (r *Radix) stringHelper(indent string) (s string) {
 
 // Return bit k from n. We count from the right, MSB left.
 // So k = 0 is the last bit on the left and k = 63 is the first bit on the right.
-func bitK(n uint32, k uint) byte {
-	return byte((n & (1 << k)) >> k)
+func bitK(n uint32, k int) byte {
+	return byte((n & (1 << uint(k))) >> uint(k))
 }
