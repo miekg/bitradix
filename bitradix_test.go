@@ -72,6 +72,9 @@ func findRoute(t *testing.T, r *Radix, s string) uint32 {
 	net, mask := ipToUint(t, ipnet)
 	t.Logf("Search %18s %032b/%d\n", s, net, mask)
 	node := r.Find(net, mask)
+	if node == nil {
+		return 0
+	}
 	return node.Value
 }
 
