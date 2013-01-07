@@ -7,10 +7,6 @@
 //    October 1968
 package bitradix
 
-import (
-	"fmt"
-)
-
 // With help from:
 // http://faculty.simpson.edu/lydia.sinapova/www/cmsc250/LN250_Weiss/L08-Radix.htm
 
@@ -51,7 +47,6 @@ func (r *Radix) Internal() bool {
 // and used to store the value v.
 // It returns the inserted node, r must be the root of the tree.
 func (r *Radix) Insert(n uint32, bits int, v uint32) *Radix {
-	println("INSERTING", n, v)
 	return r.insert(n, bits, v, bitSize-1)
 }
 
@@ -91,7 +86,6 @@ func (r *Radix) insert(n uint32, bits int, v uint32, bit int) *Radix {
 	switch r.internal {
 	case true:
 		if bitSize-bits == bit { // we need to store a value here
-			println("Store here internal")
 			// TODO(mg): check previous value?
 			r.key = n
 			r.bits = bits
@@ -102,17 +96,14 @@ func (r *Radix) insert(n uint32, bits int, v uint32, bit int) *Radix {
 		// Internal node, no key. With branches, walk the branches.
 		return r.branch[bitK(n, bit)].insert(n, bits, v, bit-1)
 	case false:
-		println("external")
 		// External node, (optional) key, no branches
 		if r.bits == 0 { // nothing here yet, put something in
-			println("nothing here yet, put something in ", n, bits)
 			r.bits = bits
 			r.key = n
 			r.Value = v
 			return r
 		}
 		if bitSize-bits == bit { // seen all bits, put something here
-			println("seen all bits, put something here")
 			if r.bits != 0 {
 				println("something here ALREADY")
 			}
@@ -128,23 +119,18 @@ func (r *Radix) insert(n uint32, bits int, v uint32, bit int) *Radix {
 
 		bcur := bitK(r.key, bit)
 		bnew := bitK(n, bit)
-		fmt.Printf("r.key %032b %d\n", r.key, bit)
-		fmt.Printf("n     %032b %d\n", n, bit)
-
-		println("bcur", bcur, "bnew", bnew)
+//		fmt.Printf("r.key %032b %d\n", r.key, bit)
+//		fmt.Printf("n     %032b %d\n", n, bit)
 
 		switch x := bitSize - r.bits; true {
 		case x == bit: // current node needs to stay here
-			println("Current node needs to be kept here")
 			// put new stuff in the branch below
 			r.branch[bnew].key = n
 			r.branch[bnew].Value = v
 			r.branch[bnew].bits = bits
 			return r.branch[bnew]
 		case x < bit: // current node can be put one level down
-			println("Moving nodes down", r.key, r.bits, r.Value)
 			if bcur == bnew {
-				println("equal bits")
 				// "fill" the correct node, with the current key - and call ourselves
 				r.branch[bcur].key = r.key
 				r.branch[bcur].Value = r.Value
@@ -155,7 +141,6 @@ func (r *Radix) insert(n uint32, bits int, v uint32, bit int) *Radix {
 				return r.branch[bnew].insert(n, bits, v, bit-1)
 			}
 			// bcur = 0, bnew == 1 or vice versa
-			println("not equal, each in own branch")
 			r.branch[bcur].key = r.key
 			r.branch[bcur].Value = r.Value
 			r.branch[bcur].bits = r.bits
