@@ -33,7 +33,7 @@ type node64 struct {
 }
 type queue64 []*node64
 
-// Push adds a node32 to the queue.
+// Push adds a node64 to the queue.
 func (q *queue64) Push(n *node64) {
 	*q = append(*q, n)
 }
