@@ -59,7 +59,7 @@ func (r *Radix) Remove(n uint32, bits int) *Radix {
 // Find searches the tree for the key n, where the first bits bits of n 
 // are significant. It returns the node found.
 func (r *Radix) Find(n uint32, bits int) *Radix {
-	return r.find(n, bits, bitSize-1)
+	return r.find(n, bits, bitSize-1, nil)
 }
 
 // Do traverses the tree r in breadth-first order. For each visited node,
@@ -159,13 +159,22 @@ func (r *Radix) insert(n uint32, bits int, v uint32, bit int) *Radix {
 	panic("bitradix: not reached")
 }
 
-func (r *Radix) find(n uint32, bits, bit int) *Radix {
+// Search the tree, when "seeing" a node with a key, store that
+// node, when we don't find anything within the allowed 
+func (r *Radix) find(n uint32, bits, bit int, last *Radix) *Radix {
 	switch r.internal {
 	case true:
-		// Internal node, no key, continue in the right branch
-		return r.branch[bitK(n, bit)].find(n, bits, bit-1)
+		if r.bits != 0 {
+			// Actual key, drag it along
+			return r.branch[bitK(n, bit)].find(n, bits, bit-1, r)
+		}
+		return r.branch[bitK(n, bit)].find(n, bits, bit-1, last)
 	case false:
-		return r
+		mask := uint32(0xFFFFFFFF << uint(r.bits))
+		if r.key&mask == n&mask {
+			return r
+		}
+		return last
 	}
 	panic("bitradix: not reached")
 }
