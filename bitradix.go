@@ -70,8 +70,6 @@ func (r *Radix) Find(n uint32, bits int) *Radix {
 // Do traverses the tree r in breadth-first order. For each visited node,
 // the function f is called with the current node and the branch taken
 // (0 for the zero, 1 for the one branch, -1 is used for the root node).
-level. The root
-// level is zero.
 func (r *Radix) Do(f func(*Radix, int)) {
 	q := new(queue)
 
