@@ -49,7 +49,7 @@ func (r *Radix32) Key() uint32 {
 }
 
 // Key returns the key under which this node is stored.
-func (r *Radix64) Key() uint32 {
+func (r *Radix64) Key() uint64 {
 	return r.key
 }
 
