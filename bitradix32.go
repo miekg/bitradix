@@ -171,15 +171,17 @@ func (r *Radix32) remove(n uint32, bits, bit int) *Radix32 {
 			// TODO(mg): check if found!?
 			return r.branch[bitK32(n, bit)].find(n, bits, bit-1, r)
 		}
-		return r.branch[bitK32(n, bit)].find(n, bits, bit-1, last)
+		return r.branch[bitK32(n, bit)].remove(n, bits, bit-1)
 	case true:
 		mask := uint32(0xFFFFFFFF << uint(r.bits))
 		if r.key&mask == n&mask {
 			return r
 		}
-		return last
+		return nil
 	}
 remove:
+	// 
+	return nil
 }
 
 // Search the tree, when "seeing" a node with a key, store that
