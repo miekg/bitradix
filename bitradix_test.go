@@ -39,11 +39,9 @@ func TestFindExact(t *testing.T) {
 	}
 	r := New()
 	for k, v := range tests {
-		t.Logf("Tree after insert of %032b\n", k)
+		t.Logf("Tree after insert of %032b (%x %d)\n", k, k, k)
 		r.Insert(k, 5, v)
 		r.Do(func(r1 *Radix, i int) { t.Logf("(%2d): %032b/%d -> %d\n", i, r1.key, r1.bits, r1.Value) })
-		t.Logf("\n------\n%s\n", r.String())
-
 	}
 	for k, v := range tests {
 		if x := r.Find(k, 5); x.Value != v {

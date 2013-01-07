@@ -86,20 +86,6 @@ func (r *Radix) Do(f func(*Radix, int)) {
 	}
 }
 
-func (r *Radix) String() string {
-	return r.str(" ")
-}
-
-func (r *Radix) str(j string) string {
-	if r == nil {
-		return ""
-	}
-	s := fmt.Sprintf("%s %032b -> %d\n", j, r.key, r.Value)
-	s += r.branch[0].str(j + "")
-	s += r.branch[1].str(j + "")
-	return s
-}
-
 // Implement insert
 func (r *Radix) insert(n uint32, bits int, v uint32, bit int) *Radix {
 	switch r.internal {
