@@ -12,69 +12,83 @@ package bitradix
 
 const bitSize = 32 // length in bits of the key
 
-// Radix implements a radix tree.
-type Radix struct {
-	branch   [2]*Radix // branch[0] is left branch for 0, and branch[1] the right for 1
+// Radix32 implements a radix tree with an uint32 as its key.
+type Radix32 struct {
+	branch   [2]*Radix32 // branch[0] is left branch for 0, and branch[1] the right for 1
 	key      uint32    // the key under which this value is stored
 	bits     int       // the number of significant bits, if 0 the key has not been set.
 	Value    uint32    // The value stored.
 	internal bool      // internal node
 }
 
-// New returns an empty, initialized Radix tree.
-func New() *Radix {
-	return &Radix{[2]*Radix{nil, nil}, 0, 0, 0, false}
+// Radix64 implements a radix tree with an uint64 as its key.
+type Radix64 struct {
+	branch   [2]*Radix64 // branch[0] is left branch for 0, and branch[1] the right for 1
+	key      uint64    // the key under which this value is stored
+	bits     int       // the number of significant bits, if 0 the key has not been set.
+	Value    uint32    // The value stored.
+	internal bool      // internal node
+}
+
+// New32 returns an empty, initialized Radix32 tree.
+func New32() *Radix32 {
+	return &Radix32{[2]*Radix32{nil, nil}, 0, 0, 0, false}
+}
+
+// New64 returns an empty, initialized Radix64 tree.
+func New64() *Radix64 {
+	return &Radix64{[2]*Radix64{nil, nil}, 0, 0, 0, false}
 }
 
 // Key returns the key under which this node is stored.
-func (r *Radix) Key() uint32 {
+func (r *Radix32) Key() uint32 {
 	return r.key
 }
 
 // Bits returns the number of significant bits for the key.
 // A value of zero indicates a key that has not been set.
-func (r *Radix) Bits() int {
+func (r *Radix32) Bits() int {
 	return r.bits
 }
 
 // Internal returns true is r is an internal node, when false is returned
 // the node is a leaf node.
-func (r *Radix) Internal() bool {
+func (r *Radix32) Internal() bool {
 	return r.internal
 }
 
 // Insert inserts a new value n in the tree r. The first bits bits of n are significant
 // and used to store the value v.
 // It returns the inserted node, r must be the root of the tree.
-func (r *Radix) Insert(n uint32, bits int, v uint32) *Radix {
+func (r *Radix32) Insert(n uint32, bits int, v uint32) *Radix32 {
 	return r.insert(n, bits, v, bitSize-1)
 }
 
 // Remove removes a value from the tree r. It returns the node removed, or nil
 // when nothing is found. r must be the root of the tree.
-func (r *Radix) Remove(n uint32, bits int) *Radix {
+func (r *Radix32) Remove(n uint32, bits int) *Radix32 {
 	return nil
 }
 
 // Find searches the tree for the key n, where the first bits bits of n 
 // are significant. It returns the node found.
-func (r *Radix) Find(n uint32, bits int) *Radix {
+func (r *Radix32) Find(n uint32, bits int) *Radix32 {
 	return r.find(n, bits, bitSize-1, nil)
 }
 
 // Do traverses the tree r in breadth-first order. For each visited node,
 // the function f is called with the current node and the branch taken
 // (0 for the zero, 1 for the one branch, -1 is used for the root node).
-func (r *Radix) Do(f func(*Radix, int)) {
-	q := make(queue, 0)
+func (r *Radix32) Do(f func(*Radix32, int)) {
+	q := make(queue32, 0)
 
-	q.Push(&node{r, -1})
+	q.Push(&node32{r, -1})
 	x := q.Pop()
 	for x != nil {
-		f(x.Radix, x.branch)
-		for i, b := range x.Radix.branch {
+		f(x.Radix32, x.branch)
+		for i, b := range x.Radix32.branch {
 			if b != nil {
-				q.Push(&node{b, i})
+				q.Push(&node32{b, i})
 			}
 		}
 		x = q.Pop()
@@ -82,7 +96,7 @@ func (r *Radix) Do(f func(*Radix, int)) {
 }
 
 // Implement insert
-func (r *Radix) insert(n uint32, bits int, v uint32, bit int) *Radix {
+func (r *Radix32) insert(n uint32, bits int, v uint32, bit int) *Radix32 {
 	switch r.internal {
 	case true:
 		if bitSize-bits == bit { // we need to store a value here
@@ -114,7 +128,7 @@ func (r *Radix) insert(n uint32, bits int, v uint32, bit int) *Radix {
 		}
 
 		// create new branches, and go from there
-		r.branch[0], r.branch[1] = New(), New()
+		r.branch[0], r.branch[1] = New32(), New32()
 		r.internal = true // becomes an internal node by definition
 
 		bcur := bitK(r.key, bit)
@@ -161,7 +175,7 @@ func (r *Radix) insert(n uint32, bits int, v uint32, bit int) *Radix {
 
 // Search the tree, when "seeing" a node with a key, store that
 // node, when we don't find anything within the allowed 
-func (r *Radix) find(n uint32, bits, bit int, last *Radix) *Radix {
+func (r *Radix32) find(n uint32, bits, bit int, last *Radix32) *Radix32 {
 	switch r.internal {
 	case true:
 		if r.bits != 0 {

@@ -12,7 +12,7 @@ func TestInsert(t *testing.T) {
 		0x04: 2010,
 		0x09: 2013,
 	}
-	r := New()
+	r := New32()
 	for key, value := range tests {
 		if x := r.Insert(key, 4, value); x.Value != value {
 			t.Logf("Expected %d, got %d for %d (node type %v)\n", value, x.Value, key, x.Internal())
@@ -22,7 +22,7 @@ func TestInsert(t *testing.T) {
 }
 
 func TestInsertIdempotent(t *testing.T) {
-	r := New()
+	r := New32()
 	r.Insert(0x08, 4, 2012)
 	r.Insert(0x08, 4, 2013)
 	if x := r.Find(0x08, 4); x.Value != 2013 {
@@ -37,11 +37,11 @@ func TestFindExact(t *testing.T) {
 		0x40000000: 2010,
 		0x90000000: 2013,
 	}
-	r := New()
+	r := New32()
 	for k, v := range tests {
 		t.Logf("Tree after insert of %032b (%x %d)\n", k, k, k)
 		r.Insert(k, 5, v)
-		r.Do(func(r1 *Radix, i int) { t.Logf("(%2d): %032b/%d -> %d\n", i, r1.key, r1.bits, r1.Value) })
+		r.Do(func(r1 *Radix32, i int) { t.Logf("(%2d): %032b/%d -> %d\n", i, r1.key, r1.bits, r1.Value) })
 	}
 	for k, v := range tests {
 		if x := r.Find(k, 5); x.Value != v {
@@ -60,14 +60,14 @@ func ipToUint(t *testing.T, n *net.IPNet) (i uint32, mask int) {
 	return
 }
 
-func addRoute(t *testing.T, r *Radix, s string, asn uint32) {
+func addRoute(t *testing.T, r *Radix32, s string, asn uint32) {
 	_, ipnet, _ := net.ParseCIDR(s)
 	net, mask := ipToUint(t, ipnet)
 	t.Logf("Route %s (%032b), AS %d\n", s, net, asn)
 	r.Insert(net, mask, asn)
 }
 
-func findRoute(t *testing.T, r *Radix, s string) uint32 {
+func findRoute(t *testing.T, r *Radix32, s string) uint32 {
 	_, ipnet, _ := net.ParseCIDR(s)
 	net, mask := ipToUint(t, ipnet)
 	t.Logf("Search %18s %032b/%d\n", s, net, mask)
@@ -79,7 +79,7 @@ func findRoute(t *testing.T, r *Radix, s string) uint32 {
 }
 
 func TestFindIP(t *testing.T) {
-	r := New()
+	r := New32()
 	// not a map to have influence on the order
 	addRoute(t, r, "10.0.0.2/8", 10)
 	addRoute(t, r, "10.20.0.0/14", 20)
@@ -105,13 +105,13 @@ func TestFindIP(t *testing.T) {
 }
 
 func TestFindIPShort(t *testing.T) {
-	r := New()
+	r := New32()
 	// not a map to have influence on the inserting order
 	addRoute(t, r, "10.0.0.2/8", 10)
 	addRoute(t, r, "10.0.0.0/14", 11)
 	addRoute(t, r, "10.20.0.0/14", 20)
 
-	r.Do(func(r1 *Radix, i int) { t.Logf("(%2d): %032b/%d -> %d\n", i, r1.key, r1.bits, r1.Value) })
+	r.Do(func(r1 *Radix32, i int) { t.Logf("(%2d): %032b/%d -> %d\n", i, r1.key, r1.bits, r1.Value) })
 
 	testips := map[string]uint32{
 		"10.20.1.2/32": 20,
@@ -147,11 +147,11 @@ func TestBitK(t *testing.T) {
 }
 
 func TestQueue(t *testing.T) {
-	q := make(queue, 0)
-	r := New()
+	q := make(queue32, 0)
+	r := New32()
 	r.Value = 10
 
-	q.Push(&node{r, -1})
+	q.Push(&node32{r, -1})
 	if r1 := q.Pop(); r1.Value != 10 {
 		t.Logf("Expected %d, got %d\n", 10, r.Value)
 		t.Fail()
@@ -163,10 +163,10 @@ func TestQueue(t *testing.T) {
 }
 
 func TestQueue2(t *testing.T) {
-	q := make(queue, 0)
+	q := make(queue32, 0)
 	tests := []uint32{20, 30, 40}
 	for _, val := range tests {
-		q.Push(&node{&Radix{Value: val}, -1})
+		q.Push(&node32{&Radix32{Value: val}, -1})
 	}
 	for _, val := range tests {
 		x := q.Pop()
@@ -175,18 +175,18 @@ func TestQueue2(t *testing.T) {
 			t.Fail()
 			continue
 		}
-		if x.Radix.Value != val {
-			t.Logf("Expected %d, got %d\n", val, x.Radix.Value)
+		if x.Radix32.Value != val {
+			t.Logf("Expected %d, got %d\n", val, x.Radix32.Value)
 			t.Fail()
 		}
 	}
 	if x := q.Pop(); x != nil {
-		t.Logf("Expected nil, got %d\n", x.Radix.Value)
+		t.Logf("Expected nil, got %d\n", x.Radix32.Value)
 		t.Fail()
 	}
 	// Push and pop again, see if that works too
 	for _, val := range tests {
-		q.Push(&node{&Radix{Value: val}, -1})
+		q.Push(&node32{&Radix32{Value: val}, -1})
 	}
 	for _, val := range tests {
 		x := q.Pop()
@@ -195,8 +195,8 @@ func TestQueue2(t *testing.T) {
 			t.Fail()
 			continue
 		}
-		if x.Radix.Value != val {
-			t.Logf("Expected %d, got %d\n", val, x.Radix.Value)
+		if x.Radix32.Value != val {
+			t.Logf("Expected %d, got %d\n", val, x.Radix32.Value)
 			t.Fail()
 		}
 	}
