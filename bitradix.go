@@ -10,7 +10,10 @@ package bitradix
 // With help from:
 // http://faculty.simpson.edu/lydia.sinapova/www/cmsc250/LN250_Weiss/L08-Radix.htm
 
-const bitSize = 32 // length in bits of the key
+const (
+	bitSize32 = 32
+	bitSize64 = 64
+)
 
 // Radix32 implements a radix tree with an uint32 as its key.
 type Radix32 struct {
@@ -45,9 +48,20 @@ func (r *Radix32) Key() uint32 {
 	return r.key
 }
 
+// Key returns the key under which this node is stored.
+func (r *Radix64) Key() uint32 {
+	return r.key
+}
+
 // Bits returns the number of significant bits for the key.
 // A value of zero indicates a key that has not been set.
 func (r *Radix32) Bits() int {
+	return r.bits
+}
+
+// Bits returns the number of significant bits for the key.
+// A value of zero indicates a key that has not been set.
+func (r *Radix64) Bits() int {
 	return r.bits
 }
 
@@ -57,11 +71,17 @@ func (r *Radix32) Internal() bool {
 	return r.internal
 }
 
+// Internal returns true is r is an internal node, when false is returned
+// the node is a leaf node.
+func (r *Radix64) Internal() bool {
+	return r.internal
+}
+
 // Insert inserts a new value n in the tree r. The first bits bits of n are significant
 // and used to store the value v.
 // It returns the inserted node, r must be the root of the tree.
 func (r *Radix32) Insert(n uint32, bits int, v uint32) *Radix32 {
-	return r.insert(n, bits, v, bitSize-1)
+	return r.insert(n, bits, v, bitSize32-1)
 }
 
 // Remove removes a value from the tree r. It returns the node removed, or nil
@@ -73,7 +93,7 @@ func (r *Radix32) Remove(n uint32, bits int) *Radix32 {
 // Find searches the tree for the key n, where the first bits bits of n 
 // are significant. It returns the node found.
 func (r *Radix32) Find(n uint32, bits int) *Radix32 {
-	return r.find(n, bits, bitSize-1, nil)
+	return r.find(n, bits, bitSize32-1, nil)
 }
 
 // Do traverses the tree r in breadth-first order. For each visited node,
@@ -99,7 +119,7 @@ func (r *Radix32) Do(f func(*Radix32, int)) {
 func (r *Radix32) insert(n uint32, bits int, v uint32, bit int) *Radix32 {
 	switch r.internal {
 	case true:
-		if bitSize-bits == bit { // we need to store a value here
+		if bitSize32-bits == bit { // we need to store a value here
 			// TODO(mg): check previous value?
 			r.key = n
 			r.bits = bits
@@ -117,7 +137,7 @@ func (r *Radix32) insert(n uint32, bits int, v uint32, bit int) *Radix32 {
 			r.Value = v
 			return r
 		}
-		if bitSize-bits == bit { // seen all bits, put something here
+		if bitSize32-bits == bit { // seen all bits, put something here
 			if r.bits != 0 {
 				// println("something here ALREADY")
 			}
@@ -136,7 +156,7 @@ func (r *Radix32) insert(n uint32, bits int, v uint32, bit int) *Radix32 {
 		// fmt.Printf("r.key %032b %d\n", r.key, bit)
 		// fmt.Printf("n     %032b %d\n", n, bit)
 
-		switch x := bitSize - r.bits; true {
+		switch x := bitSize32 - r.bits; true {
 		case x == bit: // current node needs to stay here
 			// put new stuff in the branch below
 			r.branch[bnew].key = n
