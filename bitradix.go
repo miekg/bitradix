@@ -105,7 +105,7 @@ func (r *Radix) insert(n uint32, bits int, v uint32, bit int) *Radix {
 		}
 		if bitSize-bits == bit { // seen all bits, put something here
 			if r.bits != 0 {
-				println("something here ALREADY")
+				// println("something here ALREADY")
 			}
 			r.bits = bits
 			r.key = n
@@ -119,8 +119,8 @@ func (r *Radix) insert(n uint32, bits int, v uint32, bit int) *Radix {
 
 		bcur := bitK(r.key, bit)
 		bnew := bitK(n, bit)
-//		fmt.Printf("r.key %032b %d\n", r.key, bit)
-//		fmt.Printf("n     %032b %d\n", n, bit)
+		// fmt.Printf("r.key %032b %d\n", r.key, bit)
+		// fmt.Printf("n     %032b %d\n", n, bit)
 
 		switch x := bitSize - r.bits; true {
 		case x == bit: // current node needs to stay here
