@@ -1,8 +1,8 @@
 package bitradix
 
 import (
-	//	"net"
-	//	"reflect"
+	"net"
+	"reflect"
 	"testing"
 )
 
@@ -51,28 +51,27 @@ func TestFindExact(t *testing.T) {
 	}
 }
 
-/*
 // Test with "real-life" ip addresses
-func ipToUint(t *testing.T, n *net.IPNet) (i uint32) {
+func ipToUint(t *testing.T, n *net.IPNet) (i uint32, mask int) {
 	ip := n.IP.To4()
-	ones, bits := n.Mask.Size()
-	t.Logf("bitlength mask %d %d\n", ones, bits)
 	fv := reflect.ValueOf(&i).Elem()
 	fv.SetUint(uint64(uint32(ip[0])<<24 | uint32(ip[1])<<16 | uint32(ip[2])<<8 | uint32(ip[+3])))
-	t.Logf("Bit %032b\n", i)
+	mask, _ = n.Mask.Size()
 	return
 }
 
 func addRoute(t *testing.T, r *Radix, s string, asn uint32) {
 	t.Logf("Route %s, AS %d\n", s, asn)
 	_, ipnet, _ := net.ParseCIDR(s)
-	r.Insert(ipToUint(t, ipnet), asn)
+	net, mask := ipToUint(t, ipnet)
+	r.Insert(net, mask, asn)
 }
 
 func findRoute(t *testing.T, r *Radix, s string) uint32 {
 	_, ipnet, _ := net.ParseCIDR(s)
 	t.Logf("Search %s\n", s)
-	node, _ := r.Find(ipToUint(t, ipnet)) // discard step
+	net, mask := ipToUint(t, ipnet)
+	node := r.Find(net, mask)
 	return node.Value
 }
 
@@ -125,7 +124,6 @@ func TestFindIPShort(t *testing.T) {
 		}
 	}
 }
-*/
 
 type bittest struct {
 	value uint32
