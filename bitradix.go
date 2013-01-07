@@ -79,7 +79,6 @@ func (r *Radix) Do(f func(*Radix, int)) {
 		f(x.Radix, x.branch)
 		for i, b := range x.Radix.branch {
 			if b != nil {
-				println("NODE", i)
 				q.Push(&node{b, i})
 			}
 		}
