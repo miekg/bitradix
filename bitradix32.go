@@ -25,6 +25,7 @@ type Radix32 struct {
 	leaf   bool        // leaf node
 }
 
+
 // New32 returns an empty, initialized Radix32 tree.
 func New32() *Radix32 {
 	return &Radix32{[2]*Radix32{nil, nil}, 0, 0, 0, true}
@@ -98,7 +99,7 @@ func (r *Radix32) insert(n uint32, bits int, v uint32, bit int) *Radix32 {
 			return r
 		}
 		// non-leaf node, no key. With branches, walk the branches.
-		return r.branch[bitK(n, bit)].insert(n, bits, v, bit-1)
+		return r.branch[bitK32(n, bit)].insert(n, bits, v, bit-1)
 	case true:
 		// External node, (optional) key, no branches
 		if r.bits == 0 { // nothing here yet, put something in
@@ -121,8 +122,8 @@ func (r *Radix32) insert(n uint32, bits int, v uint32, bit int) *Radix32 {
 		r.branch[0], r.branch[1] = New32(), New32()
 		r.leaf = false // becomes an non-leaf node by definition
 
-		bcur := bitK(r.key, bit)
-		bnew := bitK(n, bit)
+		bcur := bitK32(r.key, bit)
+		bnew := bitK32(n, bit)
 		// fmt.Printf("r.key %032b %d\n", r.key, bit)
 		// fmt.Printf("n     %032b %d\n", n, bit)
 
@@ -164,15 +165,16 @@ func (r *Radix32) insert(n uint32, bits int, v uint32, bit int) *Radix32 {
 }
 
 // Search the tree, when "seeing" a node with a key, store that
-// node, when we don't find anything within the allowed 
+// node, when we don't find anything within the allowed bit bits
+// we return that one.
 func (r *Radix32) find(n uint32, bits, bit int, last *Radix32) *Radix32 {
 	switch r.leaf {
 	case false:
 		if r.bits != 0 {
 			// Actual key, drag it along
-			return r.branch[bitK(n, bit)].find(n, bits, bit-1, r)
+			return r.branch[bitK32(n, bit)].find(n, bits, bit-1, r)
 		}
-		return r.branch[bitK(n, bit)].find(n, bits, bit-1, last)
+		return r.branch[bitK32(n, bit)].find(n, bits, bit-1, last)
 	case true:
 		mask := uint32(0xFFFFFFFF << uint(r.bits))
 		if r.key&mask == n&mask {
@@ -186,7 +188,7 @@ func (r *Radix32) find(n uint32, bits, bit int, last *Radix32) *Radix32 {
 // From: http://stackoverflow.com/questions/2249731/how-to-get-bit-by-bit-data-from-a-integer-value-in-c
 
 // Return bit k from n. We count from the right, MSB left.
-// So k = 0 is the last bit on the left and k = 63 is the first bit on the right.
-func bitK(n uint32, k int) byte {
+// So k = 0 is the last bit on the left and k = 31 is the first bit on the right.
+func bitK32(n uint32, k int) byte {
 	return byte((n & (1 << uint(k))) >> uint(k))
 }

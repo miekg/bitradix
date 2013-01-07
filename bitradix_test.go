@@ -133,13 +133,13 @@ type bittest struct {
 	bit   int
 }
 
-func TestBitK(t *testing.T) {
+func TestBitK32(t *testing.T) {
 	tests := map[bittest]byte{
 		bittest{0x40, 0}: 0,
 		bittest{0x40, 6}: 1,
 	}
 	for test, expected := range tests {
-		if x := bitK(test.value, test.bit); x != expected {
+		if x := bitK32(test.value, test.bit); x != expected {
 			t.Logf("Expected %d for %032b (bit #%d), got %d\n", expected, test.value, test.bit, x)
 			t.Fail()
 		}
