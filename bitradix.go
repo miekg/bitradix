@@ -22,7 +22,7 @@ type Radix32 struct {
 	key      uint32    // the key under which this value is stored
 	bits     int       // the number of significant bits, if 0 the key has not been set.
 	Value    uint32    // The value stored.
-	internal bool      // internal node
+	leaf bool      // leaf node
 }
 
 // Radix64 implements a radix tree with an uint64 as its key.
@@ -31,17 +31,17 @@ type Radix64 struct {
 	key      uint64    // the key under which this value is stored
 	bits     int       // the number of significant bits, if 0 the key has not been set.
 	Value    uint32    // The value stored.
-	internal bool      // internal node
+	leaf bool      // leaf node
 }
 
 // New32 returns an empty, initialized Radix32 tree.
 func New32() *Radix32 {
-	return &Radix32{[2]*Radix32{nil, nil}, 0, 0, 0, false}
+	return &Radix32{[2]*Radix32{nil, nil}, 0, 0, 0, true}
 }
 
 // New64 returns an empty, initialized Radix64 tree.
 func New64() *Radix64 {
-	return &Radix64{[2]*Radix64{nil, nil}, 0, 0, 0, false}
+	return &Radix64{[2]*Radix64{nil, nil}, 0, 0, 0, true}
 }
 
 // Key returns the key under which this node is stored.
@@ -66,16 +66,16 @@ func (r *Radix64) Bits() int {
 	return r.bits
 }
 
-// Internal returns true is r is an internal node, when false is returned
-// the node is a leaf node.
-func (r *Radix32) Internal() bool {
-	return r.internal
+// Leaf returns true is r is an leaf node, when false is returned
+// the node is a non-leaf node.
+func (r *Radix32) Leaf() bool {
+	return r.leaf
 }
 
-// Internal returns true is r is an internal node, when false is returned
-// the node is a leaf node.
-func (r *Radix64) Internal() bool {
-	return r.internal
+// Leaf returns true is r is an leaf node, when false is returned
+// the node is a non-leaf node.
+func (r *Radix64) Leaf() bool {
+	return r.leaf
 }
 
 // Insert inserts a new value n in the tree r. The first bits bits of n are significant
@@ -118,19 +118,19 @@ func (r *Radix32) Do(f func(*Radix32, int)) {
 
 // Implement insert
 func (r *Radix32) insert(n uint32, bits int, v uint32, bit int) *Radix32 {
-	switch r.internal {
-	case true:
+	switch r.leaf {
+	case false:
 		if bitSize32-bits == bit { // we need to store a value here
 			// TODO(mg): check previous value?
 			r.key = n
 			r.bits = bits
 			r.Value = v
-			// keep it internal
+			// keep it a non-leaf
 			return r
 		}
-		// Internal node, no key. With branches, walk the branches.
+		// non-leaf node, no key. With branches, walk the branches.
 		return r.branch[bitK(n, bit)].insert(n, bits, v, bit-1)
-	case false:
+	case true:
 		// External node, (optional) key, no branches
 		if r.bits == 0 { // nothing here yet, put something in
 			r.bits = bits
@@ -150,7 +150,7 @@ func (r *Radix32) insert(n uint32, bits int, v uint32, bit int) *Radix32 {
 
 		// create new branches, and go from there
 		r.branch[0], r.branch[1] = New32(), New32()
-		r.internal = true // becomes an internal node by definition
+		r.leaf = false // becomes an non-leaf node by definition
 
 		bcur := bitK(r.key, bit)
 		bnew := bitK(n, bit)
@@ -197,14 +197,14 @@ func (r *Radix32) insert(n uint32, bits int, v uint32, bit int) *Radix32 {
 // Search the tree, when "seeing" a node with a key, store that
 // node, when we don't find anything within the allowed 
 func (r *Radix32) find(n uint32, bits, bit int, last *Radix32) *Radix32 {
-	switch r.internal {
-	case true:
+	switch r.leaf {
+	case false:
 		if r.bits != 0 {
 			// Actual key, drag it along
 			return r.branch[bitK(n, bit)].find(n, bits, bit-1, r)
 		}
 		return r.branch[bitK(n, bit)].find(n, bits, bit-1, last)
-	case false:
+	case true:
 		mask := uint32(0xFFFFFFFF << uint(r.bits))
 		if r.key&mask == n&mask {
 			return r
