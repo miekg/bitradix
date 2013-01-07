@@ -103,12 +103,12 @@ func TestFindIP(t *testing.T) {
 
 func TestFindIPShort(t *testing.T) {
 	r := New()
-	// not a map to have influence on the order
+	// not a map to have influence on the inserting order
 	addRoute(t, r, "10.0.0.2/8", 10)
 	addRoute(t, r, "10.0.0.0/14", 11)
 	addRoute(t, r, "10.20.0.0/14", 20)
 
-//	t.Logf("%s\n", r.string())
+	r.Do(func(r1 *Radix, i int) { t.Logf("(%2d): %032b/%d -> %d\n", i, r1.key, r1.bits, r1.Value) })
 
 	testips := map[string]uint32{
 		"10.20.1.2/32": 20,
