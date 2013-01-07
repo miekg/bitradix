@@ -21,9 +21,9 @@ func (q *queue) Pop() *node {
 	n := (*q)[0]
 	switch lq {
 	case 1:
-		*q = nil
+		*q = (*q)[:0]
 	default:
-		*q = (*q)[1:lq-1]
+		*q = (*q)[1:lq]
 	}
 	return n
 }

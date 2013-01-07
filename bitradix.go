@@ -71,17 +71,16 @@ func (r *Radix) Find(n uint32, bits int) *Radix {
 // the function f is called with the current node and the branch taken
 // (0 for the zero, 1 for the one branch, -1 is used for the root node).
 func (r *Radix) Do(f func(*Radix, int)) {
-	q := new(queue)
+	q := make(queue, 0)
 
 	q.Push(&node{r, -1})
 	x := q.Pop()
 	for x != nil {
 		f(x.Radix, x.branch)
-		for i, branch := range x.Radix.branch {
-			println(i)
-			if branch != nil {
-				println("NODE")
-				q.Push(&node{branch, i})
+		for i, b := range x.Radix.branch {
+			if b != nil {
+				println("NODE", i)
+				q.Push(&node{b, i})
 			}
 		}
 		x = q.Pop()

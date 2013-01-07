@@ -148,7 +148,7 @@ func TestBitK(t *testing.T) {
 }
 
 func TestQueue(t *testing.T) {
-	q := new(queue)
+	q := make(queue, 0)
 	r := New()
 	r.Value = 10
 
@@ -160,5 +160,45 @@ func TestQueue(t *testing.T) {
 	if r1 := q.Pop(); r1 != nil {
 		t.Logf("Expected nil, got %d\n", r.Value)
 		t.Fail()
+	}
+}
+
+func TestQueue2(t *testing.T) {
+	q := make(queue, 0)
+	tests := []uint32{20, 30, 40}
+	for _, val := range tests {
+		q.Push(&node{&Radix{Value: val}, -1})
+	}
+	for _, val := range tests {
+		x := q.Pop()
+		if x == nil {
+			t.Logf("Expected non-nil, got nil\n")
+			t.Fail()
+			continue
+		}
+		if x.Radix.Value != val {
+			t.Logf("Expected %d, got %d\n", val, x.Radix.Value)
+			t.Fail()
+		}
+	}
+	if x := q.Pop(); x != nil {
+		t.Logf("Expected nil, got %d\n", x.Radix.Value)
+		t.Fail()
+	}
+	// Push and pop again, see if that works too
+	for _, val := range tests {
+		q.Push(&node{&Radix{Value: val}, -1})
+	}
+	for _, val := range tests {
+		x := q.Pop()
+		if x == nil {
+			t.Logf("Expected non-nil, got nil after emptying\n")
+			t.Fail()
+			continue
+		}
+		if x.Radix.Value != val {
+			t.Logf("Expected %d, got %d\n", val, x.Radix.Value)
+			t.Fail()
+		}
 	}
 }
