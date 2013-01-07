@@ -1,4 +1,5 @@
-// Package bitradix implements a radix tree that branches on the bits in a 32 bits key.
+// Package bitradix implements a radix tree that branches on the bits of a 32 or
+// 64 bits key.
 // The value that can be stored is an unsigned 32 bit integer.
 //                                                                                                  
 // A radix tree is defined in:
