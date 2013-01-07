@@ -25,7 +25,6 @@ type Radix32 struct {
 	leaf   bool        // leaf node
 }
 
-
 // New32 returns an empty, initialized Radix32 tree.
 func New32() *Radix32 {
 	return &Radix32{[2]*Radix32{nil, nil}, 0, 0, 0, true}
@@ -58,7 +57,7 @@ func (r *Radix32) Insert(n uint32, bits int, v uint32) *Radix32 {
 // Remove removes a value from the tree r. It returns the node removed, or nil
 // when nothing is found. r must be the root of the tree.
 func (r *Radix32) Remove(n uint32, bits int) *Radix32 {
-	return nil
+	return r.remove(n, bits, bitSize32-1)
 }
 
 // Find searches the tree for the key n, where the first bits bits of n 
@@ -164,6 +163,25 @@ func (r *Radix32) insert(n uint32, bits int, v uint32, bit int) *Radix32 {
 	panic("bitradix: not reached")
 }
 
+func (r *Radix32) remove(n uint32, bits, bit int) *Radix32 {
+	switch r.leaf {
+	case false:
+		if r.bits != 0 {
+			// Actual key, drag it along
+			// TODO(mg): check if found!?
+			return r.branch[bitK32(n, bit)].find(n, bits, bit-1, r)
+		}
+		return r.branch[bitK32(n, bit)].find(n, bits, bit-1, last)
+	case true:
+		mask := uint32(0xFFFFFFFF << uint(r.bits))
+		if r.key&mask == n&mask {
+			return r
+		}
+		return last
+	}
+remove:
+}
+
 // Search the tree, when "seeing" a node with a key, store that
 // node, when we don't find anything within the allowed bit bits
 // we return that one.
@@ -172,6 +190,7 @@ func (r *Radix32) find(n uint32, bits, bit int, last *Radix32) *Radix32 {
 	case false:
 		if r.bits != 0 {
 			// Actual key, drag it along
+			// TODO(mg): check if its the key
 			return r.branch[bitK32(n, bit)].find(n, bits, bit-1, r)
 		}
 		return r.branch[bitK32(n, bit)].find(n, bits, bit-1, last)

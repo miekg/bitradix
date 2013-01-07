@@ -116,8 +116,8 @@ func TestFindIPShort(t *testing.T) {
 	testips := map[string]uint32{
 		"10.20.1.2/32": 20,
 		"10.19.0.1/32": 10,
-		"10.0.0.2/32": 11,
-		"10.1.0.1/32": 10,
+		"10.0.0.2/32":  11,
+		"10.1.0.1/32":  10,
 	}
 
 	for ip, asn := range testips {
