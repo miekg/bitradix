@@ -1,5 +1,5 @@
 // Package bitradix implements a radix tree that branches on the bits of a 32 or
-// 64 bits key.
+// 64 bits unsigned integer key.
 // The value that can be stored is an unsigned 32 bit integer.
 //                                                                                                  
 // A radix tree is defined in:
@@ -14,6 +14,8 @@ package bitradix
 const (
 	bitSize32 = 32
 	bitSize64 = 64
+	mask32    = 0xFFFFFFFF
+	mask64    = 0xFFFFFFFFFFFFFFFF
 )
 
 // Radix32 implements a radix tree with an uint32 as its key.
@@ -164,24 +166,47 @@ func (r *Radix32) insert(n uint32, bits int, v uint32, bit int) *Radix32 {
 }
 
 func (r *Radix32) remove(n uint32, bits, bit int) *Radix32 {
-	switch r.leaf {
-	case false:
-		if r.bits != 0 {
-			// Actual key, drag it along
-			// TODO(mg): check if found!?
-			return r.branch[bitK32(n, bit)].find(n, bits, bit-1, r)
-		}
-		return r.branch[bitK32(n, bit)].remove(n, bits, bit-1)
-	case true:
-		mask := uint32(0xFFFFFFFF << uint(r.bits))
+	if r.bits > 0 && r.bits == bits {
+		// possible hit
+		mask := uint32(mask32 << uint(r.bits))
 		if r.key&mask == n&mask {
-			return r
+			goto remove
 		}
+	}
+	if r.leaf {
 		return nil
 	}
+	return r.branch[bitK32(n, bit)].remove(n, bits, bit-1)
 remove:
-	// 
-	return nil
+	// no branches
+	if r.leaf {
+		r1 := New32()
+		r1.bits = r.bits
+		r1.key = r.key
+		r1.Value = r.Value
+		r.bits = 0
+		r.key = 0
+		r.Value = 0
+		return r1
+	}
+	// one branch
+	if r.branch[0] == nil {
+		r = r.branch[1]
+		return r
+	}
+	if r.branch[1] == nil {
+		r = r.branch[0]
+		return r
+	}
+	// two branches
+	r1 := New32()
+	r1.bits = r.bits
+	r1.key = r.key
+	r1.Value = r.Value
+	r.bits = 0
+	r.key = 0
+	r.Value = 0
+	return r1
 }
 
 // Search the tree, when "seeing" a node with a key, store that
@@ -197,7 +222,7 @@ func (r *Radix32) find(n uint32, bits, bit int, last *Radix32) *Radix32 {
 		}
 		return r.branch[bitK32(n, bit)].find(n, bits, bit-1, last)
 	case true:
-		mask := uint32(0xFFFFFFFF << uint(r.bits))
+		mask := uint32(mask32 << uint(r.bits))
 		if r.key&mask == n&mask {
 			return r
 		}
