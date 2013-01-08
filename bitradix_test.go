@@ -51,6 +51,10 @@ func TestFindExact(t *testing.T) {
 	}
 }
 
+func TestRemove(t *testing.T) {
+
+}
+
 // Test with "real-life" ip addresses
 func ipToUint(t *testing.T, n *net.IPNet) (i uint32, mask int) {
 	ip := n.IP.To4()

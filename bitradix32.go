@@ -166,6 +166,9 @@ func (r *Radix32) insert(n uint32, bits int, v uint32, bit int) *Radix32 {
 }
 
 func (r *Radix32) remove(n uint32, bits, bit int) *Radix32 {
+	if bitSize32-bits == bit { // seen them all
+		return nil // TODO(mg): here already??
+	}
 	if r.bits > 0 && r.bits == bits {
 		// possible hit
 		mask := uint32(mask32 << uint(r.bits))
@@ -180,10 +183,7 @@ func (r *Radix32) remove(n uint32, bits, bit int) *Radix32 {
 remove:
 	// no branches
 	if r.leaf {
-		r1 := New32()
-		r1.bits = r.bits
-		r1.key = r.key
-		r1.Value = r.Value
+		r1 := &Radix32{[2]*Radix32{nil, nil}, r.key, r.bits, r.Value}
 		r.bits = 0
 		r.key = 0
 		r.Value = 0
@@ -199,10 +199,7 @@ remove:
 		return r
 	}
 	// two branches
-	r1 := New32()
-	r1.bits = r.bits
-	r1.key = r.key
-	r1.Value = r.Value
+	r1 := &Radix32{[2]*Radix32{nil, nil}, r.key, r.bits, r.Value}
 	r.bits = 0
 	r.key = 0
 	r.Value = 0
