@@ -94,7 +94,7 @@ func (r *Radix32) Do(f func(*Radix32, int, int)) {
 	q.Push(&node32{r, level, -1})
 	x := q.Pop()
 	for x != nil {
-		f(x.Radix32, level, x.branch)
+		f(x.Radix32, x.level, x.branch)
 		for i, b := range x.Radix32.branch {
 			if b != nil {
 				q.Push(&node32{b, level, i})
