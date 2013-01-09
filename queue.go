@@ -2,6 +2,7 @@ package bitradix
 
 type node32 struct {
 	*Radix32
+	level  int
 	branch int // -1 root, 0 left branch, 1 right branch
 }
 type queue32 []*node32
@@ -29,16 +30,15 @@ func (q *queue32) Pop() *node32 {
 
 type node64 struct {
 	*Radix64
+	// level int
 	branch int // -1 root, 0 left branch, 1 right branch
 }
 type queue64 []*node64
 
-// Push adds a node64 to the queue.
 func (q *queue64) Push(n *node64) {
 	*q = append(*q, n)
 }
 
-// Pop removes and returns a node from the queue in first to last order.
 func (q *queue64) Pop() *node64 {
 	lq := len(*q)
 	if lq == 0 {

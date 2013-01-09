@@ -87,18 +87,20 @@ func (r *Radix32) Find(n uint32, bits int) *Radix32 {
 // Do traverses the tree r in breadth-first order. For each visited node,
 // the function f is called with the current node and the branch taken
 // (0 for the zero, 1 for the one branch, -1 is used for the root node).
-func (r *Radix32) Do(f func(*Radix32, int)) {
+func (r *Radix32) Do(f func(*Radix32, int, int)) {
 	q := make(queue32, 0)
 
-	q.Push(&node32{r, -1})
+	level := 0
+	q.Push(&node32{r, level, -1})
 	x := q.Pop()
 	for x != nil {
-		f(x.Radix32, x.branch)
+		f(x.Radix32, level, x.branch)
 		for i, b := range x.Radix32.branch {
 			if b != nil {
-				q.Push(&node32{b, i})
+				q.Push(&node32{b, level, i})
 			}
 		}
+		level++
 		x = q.Pop()
 	}
 }
