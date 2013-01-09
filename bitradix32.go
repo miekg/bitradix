@@ -50,6 +50,17 @@ func (r *Radix32) Leaf() bool {
 	return r.leaf
 }
 
+// return the number of non-nil branches
+func (r *Radix32) branches() (i int) {
+	if r.branch[0] != nil {
+		i++
+	}
+	if r.branch[1] != nil {
+		i++
+	}
+	return
+}
+
 // Insert inserts a new value n in the tree r. The first bits bits of n are significant
 // and used to store the value v.
 // It returns the inserted node, r must be the root of the tree.
@@ -180,6 +191,14 @@ func (r *Radix32) remove(n uint32, bits, bit int) (r1 *Radix32) {
 			r.bits = 0
 			r.key = 0
 			r.Value = 0
+			if r.parent != nil && r.leaf {
+				if r.parent.branch[0] == r {
+					r.parent.branch[0] = nil
+				}
+				if r.parent.branch[1] == r {
+					r.parent.branch[1] = nil
+				}
+			}
 			println("start pruning")
 			r.prune()
 			return r1
@@ -192,64 +211,36 @@ func (r *Radix32) remove(n uint32, bits, bit int) (r1 *Radix32) {
 	return r.branch[k].remove(n, bits, bit-1)
 }
 
-// When removing a node, walk up the tree and cut stuff away nodes that fall of
-// now that node has been removed. Prune is called with the node that is about
-// to be removed.
+// When the parent of this node, only has on this child (this one) and contains
+// no key, move it up (the parent becomes this node).
 func (r *Radix32) prune() {
 	if r.parent == nil {
 		return
 	}
 	println("PRUNING node", r.key, r.bits, r.Value)
-	switch r.leaf {
-	case true:
-		println("LEAF")
-		var k byte
-		// look in parent and kill this branch.
-		if r.bits == 0 && r.parent.branch[0] == r {
-			println("KILL 0 BRANCH")
-			k = 0
-			r.parent.branch[0] = nil
-		}
-		if r.bits == 0 && r.parent.branch[1] == r {
-			println("KILL 1 BRANCH")
-			k = 1
-			r.parent.branch[1] = nil
-		}
-		switch r.parent.bits {
-		case 0:
-			// no key
-			if r.parent.branch[1-k] != nil {
-				// pull remaining branch in
-				r.parent.branch[1-k].parent = r.parent
-				r.parent = r.parent.branch[1-k]
-				r.parent.prune()
-			}
-		default:
-			// key
-			// can not do anything, the parent is occupied
+	if r.parent.bits != 0 {
+		// fun stops here
+		return
+	}
+	switch r.parent.branches() {
+	case 0:
+		println("I'm the child, but my parent does not see me")
+		return
+	case 1:
+		// one child, get the non-nil branch
+		if r.parent.branch[0] != nil {
+			r.parent.branch[0] = r
+			r.parent.prune()
 			return
 		}
-
-	case false:
-		println("NON LEAF")
-		switch r.parent.bits {
-		case 0:
-			// no key, check if the other branch is nil, if so, move up
-			if r.parent.branch[0] == nil {
-				r.parent.branch[1].parent = r.parent
-				r.parent = r.parent.branch[1]
-				r.parent.prune()
-			}
-			if r.parent.branch[1] == nil {
-				r.parent.branch[0].parent = r.parent
-				r.parent = r.parent.branch[0]
-				r.parent.prune()
-			}
-		default:
-			// key
-			// Family Guy: oocupado
+		if r.parent.branch[1] != nil {
+			r.parent.branch[1] = r
+			r.parent.prune()
 			return
 		}
+	case 2:
+		// look up further
+		r.parent.prune()
 	}
 }
 
