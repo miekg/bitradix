@@ -4,14 +4,15 @@ package bitradix
 // are identical to those of Radix32, except for the key length.
 type Radix64 struct {
 	branch [2]*Radix64 // branch[0] is left branch for 0, and branch[1] the right for 1
-	key    uint64      // the key under which this value is stored
-	bits   int         // the number of significant bits, if 0 the key has not been set.
-	Value  uint32      // The value stored.
-	leaf   bool        // leaf node
+	parent *Radix64
+	key    uint64 // the key under which this value is stored
+	bits   int    // the number of significant bits, if 0 the key has not been set.
+	Value  uint32 // The value stored.
+	leaf   bool   // leaf node
 }
 
 func New64() *Radix64 {
-	return &Radix64{[2]*Radix64{nil, nil}, 0, 0, 0, true}
+	return &Radix64{[2]*Radix64{nil, nil}, nil, 0, 0, 0, true}
 }
 
 func (r *Radix64) Key() uint64 {
@@ -24,6 +25,16 @@ func (r *Radix64) Bits() int {
 
 func (r *Radix64) Leaf() bool {
 	return r.leaf
+}
+
+func (r *Radix64) branches(i int) {
+	if r.branch[0] != nil {
+		i++
+	}
+	if r.branch[1] != nil {
+		i++
+	}
+	return
 }
 
 func (r *Radix64) Insert(n uint64, bits int, v uint32) *Radix64 {

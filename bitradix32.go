@@ -21,11 +21,11 @@ const (
 // Radix32 implements a radix tree with an uint32 as its key.
 type Radix32 struct {
 	branch [2]*Radix32 // branch[0] is left branch for 0, and branch[1] the right for 1
-	parent *Radix32    // parent node
-	key    uint32      // the key under which this value is stored
-	bits   int         // the number of significant bits, if 0 the key has not been set.
-	Value  uint32      // The value stored.
-	leaf   bool        // leaf node
+	parent *Radix32
+	key    uint32 // the key under which this value is stored
+	bits   int    // the number of significant bits, if 0 the key has not been set.
+	Value  uint32 // The value stored.
+	leaf   bool   // leaf node
 }
 
 // New32 returns an empty, initialized Radix32 tree.
@@ -50,12 +50,16 @@ func (r *Radix32) Leaf() bool {
 	return r.leaf
 }
 
-// return the number of non-nil branches
-func (r *Radix32) branches() (i int) {
-	if r.branch[0] != nil {
+// return the number of leaf branches for this node
+func (r *Radix32) leafs() (i int) {
+	if r.leaf {
+		return 0
+	}
+	// must be two filled branches
+	if r.branch[0].leaf {
 		i++
 	}
-	if r.branch[1] != nil {
+	if r.branch[1].leaf {
 		i++
 	}
 	return
@@ -180,68 +184,48 @@ func (r *Radix32) insert(n uint32, bits int, v uint32, bit int) *Radix32 {
 
 // Walk the tree searching for n, keep the last node that has a key in tow.
 // This is the node we should retreat to when we find and delete our node.
-func (r *Radix32) remove(n uint32, bits, bit int) (r1 *Radix32) {
-	var k byte
+func (r *Radix32) remove(n uint32, bits, bit int) *Radix32 {
 	if r.bits > 0 && r.bits == bits {
 		// possible hit
 		mask := uint32(mask32 << uint(r.bits))
 		if r.key&mask == n&mask {
 			// save r in r1
-			r1 = &Radix32{[2]*Radix32{nil, nil}, nil, r.key, r.bits, r.Value, r.leaf}
-			r.bits = 0
-			r.key = 0
-			r.Value = 0
-			if r.parent != nil && r.leaf {
-				if r.parent.branch[0] == r {
-					r.parent.branch[0] = nil
-				}
-				if r.parent.branch[1] == r {
-					r.parent.branch[1] = nil
-				}
-			}
-			println("start pruning")
-			r.prune()
+			r1 := &Radix32{[2]*Radix32{nil, nil}, nil, r.key, r.bits, r.Value, r.leaf}
+			println("start pruning", r.Value)
+			//r.bits = 0
+			//r.key = 0
+			//r.Value = 0
+			println(r.branch[0], r.branch[1])
+			r.prune(true)
 			return r1
 		}
 	}
-	k = bitK32(n, bit)
-	if r.leaf || r.branch[k] == nil {
+	if r.leaf {
 		return nil // dead end
 	}
-	return r.branch[k].remove(n, bits, bit-1)
+	return r.branch[bitK32(n, bit)].remove(n, bits, bit-1)
 }
 
-// When the parent of this node, only has on this child (this one) and contains
-// no key, move it up (the parent becomes this node).
-func (r *Radix32) prune() {
-	if r.parent == nil {
-		return
-	}
-	println("PRUNING node", r.key, r.bits, r.Value)
-	if r.parent.bits != 0 {
-		// fun stops here
-		return
-	}
-	switch r.parent.branches() {
-	case 0:
-		println("I'm the child, but my parent does not see me")
-		return
-	case 1:
-		// one child, get the non-nil branch
-		if r.parent.branch[0] != nil {
-			r.parent.branch[0] = r
-			r.parent.prune()
-			return
+// Prune the tree
+func (r *Radix32) prune(b bool) {
+	if b {
+		// we are a node, we have a parent, so the parent is 
+		// a non-leaf node
+		if r.parent.branch[0] == r {
+			println(r, "upping 1")
+			println(r.parent.Value)
+			r.parent = r.parent.branch[1] // parent parent is wrong now
+			println(r.parent.Value)
 		}
-		if r.parent.branch[1] != nil {
-			r.parent.branch[1] = r
-			r.parent.prune()
-			return
+		if r.parent.branch[1] == r {
+			println(r, "upping 0")
+			r.parent = r.parent.branch[0]
+			println(r.parent.leaf)
+			println(r.parent.branch[0], r.parent.branch[1])
 		}
-	case 2:
-		// look up further
-		r.parent.prune()
+
 	}
+	return
 }
 
 // Search the tree, when "seeing" a node with a key, store that
