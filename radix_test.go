@@ -57,7 +57,7 @@ func TestFindExact(t *testing.T) {
 	for k, v := range tests {
 		t.Logf("Tree after insert of %032b (%x %d)\n", k, k, k)
 		r.Insert(k, bits32, v)
-		r.Do(func(r1 *Radix32, i int) { t.Logf("(%2d): %032b/%d -> %d\n", i, r1.key, r1.bits, r1.Value) })
+		r.Do(func(r1 *Radix32, l, i int) { t.Logf("(%2d): %032b/%d -> %d\n", i, r1.key, r1.bits, r1.Value) })
 	}
 	for k, v := range tests {
 		if x := r.Find(k, bits32); x.Value != v {
@@ -75,17 +75,17 @@ func TestRemove(t *testing.T) {
 	r.Insert(k, bits32, v)
 
 	t.Logf("Tree complete\n")
-	r.Do(func(r1 *Radix32, i int) { t.Logf("%p [%010p %010p] (%2d): %032b/%d -> %d\n", r1, r1.branch[0], r1.branch[1], i, r1.key, r1.bits, r1.Value) })
+	r.Do(func(r1 *Radix32, l, i int) { t.Logf("%p [%010p %010p] (%2d): %032b/%d -> %d\n", r1, r1.branch[0], r1.branch[1], i, r1.key, r1.bits, r1.Value) })
 
 	k, v = uint32(0x90000000), 2013
 	t.Logf("Tree after removal of %032b/%d %d (%x %d)\n", k, bits32, v, k, k)
 	r.Remove(k, bits32)
-	r.Do(func(r1 *Radix32, i int) { t.Logf("%p [%010p %010p] (%2d): %032b/%d -> %d\n", r1, r1.branch[0], r1.branch[1], i, r1.key, r1.bits, r1.Value) })
+	r.Do(func(r1 *Radix32, l, i int) { t.Logf("%p [%010p %010p] (%2d): %032b/%d -> %d\n", r1, r1.branch[0], r1.branch[1], i, r1.key, r1.bits, r1.Value) })
 
 	k, v = uint32(0x80000000), 2010
 	t.Logf("Tree after removal of %032b/%d %d (%x %d)\n", k, bits32, v, k, k)
 	r.Remove(k, bits32)
-	r.Do(func(r1 *Radix32, i int) { t.Logf("%p [%010p %010p] (%2d): %032b/%d -> %d\n", r1, r1.branch[0], r1.branch[1], i, r1.key, r1.bits, r1.Value) })
+	r.Do(func(r1 *Radix32, l, i int) { t.Logf("%p [%010p %010p] (%2d): %032b/%d -> %d\n", r1, r1.branch[0], r1.branch[1], i, r1.key, r1.bits, r1.Value) })
 }
 
 // Test with "real-life" ip addresses
@@ -148,7 +148,7 @@ func TestFindIPShort(t *testing.T) {
 	addRoute(t, r, "10.0.0.0/14", 11)
 	addRoute(t, r, "10.20.0.0/14", 20)
 
-	r.Do(func(r1 *Radix32, i int) { t.Logf("(%2d): %032b/%d -> %d\n", i, r1.key, r1.bits, r1.Value) })
+	r.Do(func(r1 *Radix32, l, i int) { t.Logf("(%2d): %032b/%d -> %d\n", i, r1.key, r1.bits, r1.Value) })
 
 	testips := map[string]uint32{
 		"10.20.1.2/32": 20,
@@ -188,7 +188,7 @@ func TestQueue(t *testing.T) {
 	r := New32()
 	r.Value = 10
 
-	q.Push(&node32{r, -1})
+	q.Push(&node32{r, 0, -1})
 	if r1 := q.Pop(); r1.Value != 10 {
 		t.Logf("Expected %d, got %d\n", 10, r.Value)
 		t.Fail()
@@ -203,7 +203,7 @@ func TestQueue2(t *testing.T) {
 	q := make(queue32, 0)
 	tests := []uint32{20, 30, 40}
 	for _, val := range tests {
-		q.Push(&node32{&Radix32{Value: val}, -1})
+		q.Push(&node32{&Radix32{Value: val}, 0, -1})
 	}
 	for _, val := range tests {
 		x := q.Pop()
@@ -223,7 +223,7 @@ func TestQueue2(t *testing.T) {
 	}
 	// Push and pop again, see if that works too
 	for _, val := range tests {
-		q.Push(&node32{&Radix32{Value: val}, -1})
+		q.Push(&node32{&Radix32{Value: val}, 0, -1})
 	}
 	for _, val := range tests {
 		x := q.Pop()
