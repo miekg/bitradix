@@ -180,6 +180,7 @@ func (r *Radix32) remove(n uint32, bits, bit int) (r1 *Radix32) {
 			r.bits = 0
 			r.key = 0
 			r.Value = 0
+			println("start pruning")
 			r.prune()
 			return r1
 		}
@@ -198,15 +199,19 @@ func (r *Radix32) prune() {
 	if r.parent == nil {
 		return
 	}
+	println("PRUNING node", r.key, r.bits, r.Value)
 	switch r.leaf {
 	case true:
+		println("LEAF")
 		var k byte
 		// look in parent and kill this branch.
-		if r.parent.branch[0] == r {
+		if r.bits == 0 && r.parent.branch[0] == r {
+			println("KILL 0 BRANCH")
 			k = 0
 			r.parent.branch[0] = nil
 		}
-		if r.parent.branch[1] == r {
+		if r.bits == 0 && r.parent.branch[1] == r {
+			println("KILL 1 BRANCH")
 			k = 1
 			r.parent.branch[1] = nil
 		}
@@ -226,6 +231,7 @@ func (r *Radix32) prune() {
 		}
 
 	case false:
+		println("NON LEAF")
 		switch r.parent.bits {
 		case 0:
 			// no key, check if the other branch is nil, if so, move up
