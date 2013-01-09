@@ -6,6 +6,22 @@ import (
 	"testing"
 )
 
+var tests = map[uint32]uint32{
+	0x80000000: 2012,
+	0x40000000: 2010,
+	0x90000000: 2013,
+}
+
+const bits32 = 5
+
+func newTree32() *Radix32 {
+	r := New32()
+	for k, v := range tests {
+		r.Insert(k, bits32, v)
+	}
+	return r
+}
+
 func TestInsert(t *testing.T) {
 	tests := map[uint32]uint32{
 		0x08: 2012,
@@ -40,11 +56,11 @@ func TestFindExact(t *testing.T) {
 	r := New32()
 	for k, v := range tests {
 		t.Logf("Tree after insert of %032b (%x %d)\n", k, k, k)
-		r.Insert(k, 5, v)
+		r.Insert(k, bits32, v)
 		r.Do(func(r1 *Radix32, i int) { t.Logf("(%2d): %032b/%d -> %d\n", i, r1.key, r1.bits, r1.Value) })
 	}
 	for k, v := range tests {
-		if x := r.Find(k, 5); x.Value != v {
+		if x := r.Find(k, bits32); x.Value != v {
 			t.Logf("Expected %d, got %d for %d (node type %v)\n", v, x.Value, k, x.Leaf())
 			t.Fail()
 		}
@@ -52,6 +68,15 @@ func TestFindExact(t *testing.T) {
 }
 
 func TestRemove(t *testing.T) {
+	r := newTree32()
+	t.Logf("Tree complete\n")
+	r.Do(func(r1 *Radix32, i int) { t.Logf("(%2d): %032b/%d -> %d\n", i, r1.key, r1.bits, r1.Value) })
+
+	for k, v := range tests {
+		t.Logf("Tree after removal of %032b/%d %d (%x %d)\n", k, bits32, v, k, k)
+		r.Remove(k, bits32)
+		r.Do(func(r1 *Radix32, i int) { t.Logf("(%2d): %032b/%d -> %d\n", i, r1.key, r1.bits, r1.Value) })
+	}
 
 }
 

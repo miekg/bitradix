@@ -21,6 +21,7 @@ const (
 // Radix32 implements a radix tree with an uint32 as its key.
 type Radix32 struct {
 	branch [2]*Radix32 // branch[0] is left branch for 0, and branch[1] the right for 1
+	parent *Radix32    // parent node
 	key    uint32      // the key under which this value is stored
 	bits   int         // the number of significant bits, if 0 the key has not been set.
 	Value  uint32      // The value stored.
@@ -29,7 +30,7 @@ type Radix32 struct {
 
 // New32 returns an empty, initialized Radix32 tree.
 func New32() *Radix32 {
-	return &Radix32{[2]*Radix32{nil, nil}, 0, 0, 0, true}
+	return &Radix32{[2]*Radix32{nil, nil}, nil, 0, 0, 0, true}
 }
 
 // Key returns the key under which this node is stored.
@@ -121,6 +122,8 @@ func (r *Radix32) insert(n uint32, bits int, v uint32, bit int) *Radix32 {
 
 		// create new branches, and go from there
 		r.branch[0], r.branch[1] = New32(), New32()
+		r.branch[0].parent, r.branch[1].parent = r, r
+
 		r.leaf = false // becomes an non-leaf node by definition
 
 		bcur := bitK32(r.key, bit)
@@ -165,44 +168,44 @@ func (r *Radix32) insert(n uint32, bits int, v uint32, bit int) *Radix32 {
 	panic("bitradix: not reached")
 }
 
-func (r *Radix32) remove(n uint32, bits, bit int) *Radix32 {
-	if bitSize32-bits == bit { // seen them all
-		return nil // TODO(mg): here already??
-	}
+// Walk the tree searching for n, keep the last node that has a key in tow.
+// This is the node we should retreat to when we find and delete our node.
+func (r *Radix32) remove(n uint32, bits, bit int) (r1 *Radix32) {
+	var k byte
 	if r.bits > 0 && r.bits == bits {
 		// possible hit
 		mask := uint32(mask32 << uint(r.bits))
 		if r.key&mask == n&mask {
+			// save r in r1
+			r1 = &Radix32{[2]*Radix32{nil, nil}, nil, r.key, r.bits, r.Value, r.leaf}
+			r.bits = 0
+			r.key = 0
+			r.Value = 0
 			goto remove
 		}
 	}
-	if r.leaf {
-		return nil
+	k = bitK32(n, bit)
+	if r.leaf || r.branch[k] == nil {
+		return nil // dead end
 	}
-	return r.branch[bitK32(n, bit)].remove(n, bits, bit-1)
+	return r.branch[k].remove(n, bits, bit-1)
 remove:
 	// no branches
 	if r.leaf {
-		r1 := &Radix32{[2]*Radix32{nil, nil}, r.key, r.bits, r.Value}
-		r.bits = 0
-		r.key = 0
-		r.Value = 0
 		return r1
 	}
 	// one branch
 	if r.branch[0] == nil {
 		r = r.branch[1]
-		return r
+		println("UP")
+		goto remove
 	}
 	if r.branch[1] == nil {
 		r = r.branch[0]
-		return r
+		println("UP")
+		goto remove
 	}
 	// two branches
-	r1 := &Radix32{[2]*Radix32{nil, nil}, r.key, r.bits, r.Value}
-	r.bits = 0
-	r.key = 0
-	r.Value = 0
 	return r1
 }
 
