@@ -1,6 +1,5 @@
 // Package bitradix implements a radix tree that branches on the bits of a 32 or
 // 64 bits unsigned integer key.
-// The value that can be stored is an unsigned 32 bit integer.
 //                                                                                                  
 // A radix tree is defined in:
 //    Donald R. Morrison. "PATRICIA -- practical algorithm to retrieve
@@ -25,12 +24,12 @@ type Radix32 struct {
 	parent *Radix32
 	key    uint32 // the key under which this value is stored
 	bits   int    // the number of significant bits, if 0 the key has not been set.
-	Value  uint32 // The value stored.
+	Value  interface{} // The value stored.
 }
 
 // New32 returns an empty, initialized Radix32 tree.
 func New32() *Radix32 {
-	return &Radix32{[2]*Radix32{nil, nil}, nil, 0, 0, 0}
+	return &Radix32{[2]*Radix32{nil, nil}, nil, 0, 0, nil}
 }
 
 // Key returns the key under which this node is stored.
@@ -53,7 +52,7 @@ func (r *Radix32) Leaf() bool {
 // Insert inserts a new value n in the tree r (possibly silently overwriting an existing value). 
 // The first bits bits of n are significant and used to store the value v.
 // It returns the inserted node, r must be the root of the tree.
-func (r *Radix32) Insert(n uint32, bits int, v uint32) *Radix32 {
+func (r *Radix32) Insert(n uint32, bits int, v interface{}) *Radix32 {
 	return r.insert(n, bits, v, bitSize32-1)
 }
 
@@ -92,7 +91,7 @@ func (r *Radix32) Do(f func(*Radix32, int, int)) {
 }
 
 // Implement insert
-func (r *Radix32) insert(n uint32, bits int, v uint32, bit int) *Radix32 {
+func (r *Radix32) insert(n uint32, bits int, v interface{}, bit int) *Radix32 {
 	switch r.Leaf() {
 	case false:
 		if bitSize32-bits == bit { // we need to store a value here
@@ -199,7 +198,7 @@ func (r *Radix32) prune(b bool) {
 		if r.parent == nil {
 			r.bits = 0
 			r.key = 0
-			r.Value = 0
+			r.Value = nil
 			return
 		}
 		// we are a node, we have a parent, so the parent is a non-leaf node

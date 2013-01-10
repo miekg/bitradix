@@ -7,7 +7,7 @@ type Radix64 struct {
 	parent *Radix64
 	key    uint64 // the key under which this value is stored
 	bits   int    // the number of significant bits, if 0 the key has not been set.
-	Value  uint32 // The value stored.
+	Value  interface{} // The value stored.
 }
 
 func New64() *Radix64 {
@@ -26,7 +26,7 @@ func (r *Radix64) Leaf() bool {
 	return r.branch[0] == nil && r.branch[1] == nil
 }
 
-func (r *Radix64) Insert(n uint64, bits int, v uint32) *Radix64 {
+func (r *Radix64) Insert(n uint64, bits int, v interface{}) *Radix64 {
 	return r.insert(n, bits, v, bitSize64-1)
 }
 
@@ -56,7 +56,7 @@ func (r *Radix64) Do(f func(*Radix64, int, int)) {
 	}
 }
 
-func (r *Radix64) insert(n uint64, bits int, v uint32, bit int) *Radix64 {
+func (r *Radix64) insert(n uint64, bits int, v interface{}, bit int) *Radix64 {
 	switch r.Leaf() {
 	case false:
 		if bitSize64-bits == bit { // we need to store a value here
