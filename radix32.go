@@ -195,6 +195,7 @@ func (r *Radix32) remove(n uint32, bits, bit int) *Radix32 {
 	}
 	k := bitK32(n, bit)
 	if r.Leaf() || r.branch[k] == nil { // dead end
+		println("Dead end", n)
 		return nil
 	}
 	return r.branch[bitK32(n, bit)].remove(n, bits, bit-1)
@@ -203,6 +204,13 @@ func (r *Radix32) remove(n uint32, bits, bit int) *Radix32 {
 // Prune the tree
 func (r *Radix32) prune(b bool) {
 	if b {
+		if r.parent == nil {
+			// root node
+			r.bits = 0
+			r.key = 0
+			r.Value = 0
+			return
+		}
 		// we are a node, we have a parent, so the parent is 
 		// a non-leaf node
 		if r.parent.branch[0] == r {
