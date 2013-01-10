@@ -8,10 +8,6 @@
 //    October 1968
 package bitradix
 
-import (
-	"strconv"
-)
-
 // With help from:
 // http://faculty.simpson.edu/lydia.sinapova/www/cmsc250/LN250_Weiss/L08-Radix.htm
 
@@ -216,8 +212,31 @@ func (r *Radix32) prune(b bool) {
 		if r.parent.branch[1] == r {
 			r.parent.branch[1] = nil
 		}
+		r.parent.prune(false)
 	}
-	return
+	if r.bits != 0 {
+		// fun stops
+		return
+	}
+	if r.parent == nil {
+		// fun stops
+		return
+	}
+	// Does my parent have one or two childeren, if one, move my self up one node
+	b0 := r.parent.branch[0]
+	b1 := r.parent.branch[1]
+	if b0 != nil && b1 != nil {
+		// two branches, we cannot replace the node
+		return
+	}
+	// one branch, move up
+	r.parent.key = r.key
+	r.parent.Value = r.Value
+	// r.parent.parent // Keep!
+	r.parent.bits = r.bits
+	r.parent.branch[0] = r.branch[0]
+	r.parent.branch[1] = r.branch[1]
+	r.parent.prune(false)
 }
 
 // Search the tree, when "seeing" a node with a key, store that
