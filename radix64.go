@@ -31,7 +31,7 @@ func (r *Radix64) Insert(n uint64, bits int, v uint32) *Radix64 {
 }
 
 func (r *Radix64) Remove(n uint64, bits int) *Radix64 {
-	return r.remove(n, bits, bitSize64-1)
+	return r.remove(n, bits)
 }
 
 func (r *Radix64) Find(n uint64, bits int) *Radix64 {
@@ -60,7 +60,7 @@ func (r *Radix64) insert(n uint64, bits int, v uint32, bit int) *Radix64 {
 	return nil
 }
 
-func (r *Radix64) remove(uint64, bits int, v uint32, bit int) *Radix64 {
+func (r *Radix64) remove(n uint64, bits int) *Radix64 {
 	return nil
 }
 
