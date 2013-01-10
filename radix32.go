@@ -25,7 +25,6 @@ type Radix32 struct {
 	key    uint32 // the key under which this value is stored
 	bits   int    // the number of significant bits, if 0 the key has not been set.
 	Value  uint32 // The value stored.
-	// A leaf node is a node where both branches are nil 
 }
 
 // New32 returns an empty, initialized Radix32 tree.
@@ -76,7 +75,7 @@ func (r *Radix32) Find(n uint32, bits int) *Radix32 {
 func (r *Radix32) Do(f func(*Radix32, int, int)) {
 	q := make(queue32, 0)
 
-	level := 0
+	level := 0	// TODO(mg): Does level really works as intended??
 	q.Push(&node32{r, level, -1})
 	x := q.Pop()
 	for x != nil {
@@ -95,13 +94,11 @@ func (r *Radix32) Do(f func(*Radix32, int, int)) {
 func (r *Radix32) insert(n uint32, bits int, v uint32, bit int) *Radix32 {
 	switch r.Leaf() {
 	case false:
-		// if bitSize32-bits == bit { // seen all bits, put something here
 		if bitSize32-bits == bit { // we need to store a value here
-			// TODO(mg): check previous value?
+			// TODO(mg): check previous value? And then what?
 			r.key = n
 			r.bits = bits
 			r.Value = v
-			// keep it a non-leaf
 			return r
 		}
 		// Non-leaf node, no key, one or two branches
@@ -121,7 +118,7 @@ func (r *Radix32) insert(n uint32, bits int, v uint32, bit int) *Radix32 {
 		}
 		if bitSize32-bits == bit { // seen all bits, put something here
 			if r.bits != 0 {
-				// println("something here ALREADY")
+				// TODO(mg): prev value. What to do
 			}
 			r.bits = bits
 			r.key = n
@@ -195,7 +192,7 @@ func (r *Radix32) remove(n uint32, bits, bit int) *Radix32 {
 	return r.branch[bitK32(n, bit)].remove(n, bits, bit-1)
 }
 
-// Prune the tree
+// Prune the tree, when b is true the current node is deleted.
 func (r *Radix32) prune(b bool) {
 	if b {
 		if r.parent == nil {
@@ -205,10 +202,9 @@ func (r *Radix32) prune(b bool) {
 			r.Value = 0
 			return
 		}
-		// we are a node, we have a parent, so the parent is 
-		// a non-leaf node
+		// we are a node, we have a parent, so the parent is a non-leaf node
 		if r.parent.branch[0] == r {
-			// kill the branch
+			// kill that branch
 			r.parent.branch[0] = nil
 		}
 		if r.parent.branch[1] == r {
@@ -268,8 +264,12 @@ func (r *Radix32) find(n uint32, bits, bit int, last *Radix32) *Radix32 {
 			return r
 		}
 		if r.bits != 0 {
-			// Actual key, drag it along
-			// TODO(mg): check if its THE key
+			// TODO(mg) double check, think this is correct
+			mask := uint32(mask32 << (bitSize32 - uint(bits)))
+			if r.key&mask == n&mask {
+				return r
+			}
+			// A key, drag it along
 			return r.branch[k].find(n, bits, bit-1, r)
 		}
 		return r.branch[k].find(n, bits, bit-1, last)
