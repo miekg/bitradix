@@ -60,7 +60,7 @@ func (r *Radix64) insert(n uint64, bits int, v uint32, bit int) *Radix64 {
 	return nil
 }
 
-func (r *Radix64) remove(uint64, bits int, v uint32, bit int) *Radix64 {
+func (r *Radix64) remove(n uint64, bits, bit int) *Radix64 {
 	return nil
 }
 
