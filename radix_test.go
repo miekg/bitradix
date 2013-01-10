@@ -131,6 +131,9 @@ func TestFindIP(t *testing.T) {
 	addRoute(t, r, "192.168.0.0/16", 192)
 	addRoute(t, r, "192.168.2.0/24", 1922)
 
+	addRoute(t, r, "8.0.0.0/9", 3356)
+	addRoute(t, r, "8.8.8.0/24", 15169)
+
 	testips := map[string]uint32{
 		"10.20.1.2/32":   20,
 		"10.22.1.2/32":   20,
@@ -138,6 +141,9 @@ func TestFindIP(t *testing.T) {
 		"10.21.0.1/32":   21,
 		"192.168.2.3/32": 1922,
 		"230.0.0.1/32":   0,
+
+		"8.8.8.8/32": 15169,
+		"8.8.7.1/32": 3356,
 	}
 
 	for ip, asn := range testips {
