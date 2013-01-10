@@ -131,13 +131,13 @@ func addRoute(t *testing.T, r *Radix32, s string, asn uint32) {
 	r.Insert(net, mask, asn)
 }
 
-func findRoute(t *testing.T, r *Radix32, s string) uint32 {
+func findRoute(t *testing.T, r *Radix32, s string) interface{} {
 	_, ipnet, _ := net.ParseCIDR(s)
 	net, mask := ipToUint(t, ipnet)
 	t.Logf("Search %18s %032b/%d\n", s, net, mask)
 	node := r.Find(net, mask)
 	if node == nil {
-		return 0
+		return uint32(0)
 	}
 	return node.Value
 }
@@ -157,7 +157,7 @@ func TestFindIP(t *testing.T) {
 	testips := map[string]uint32{
 		"10.20.1.2/32":   20,
 		"10.22.1.2/32":   20,
-		"10.19.0.1/32":   20,
+		"10.19.0.1/32":   10,
 		"10.21.0.1/32":   21,
 		"192.168.2.3/32": 1922,
 		"230.0.0.1/32":   0,
@@ -168,7 +168,7 @@ func TestFindIP(t *testing.T) {
 
 	for ip, asn := range testips {
 		if x := findRoute(t, r, ip); asn != x {
-			t.Logf("Expected %d, got %d for %s\n", asn, x, ip)
+			t.Logf("Expected %d, got %d for %si %T\n", asn, x, ip, x)
 			t.Fail()
 		}
 	}

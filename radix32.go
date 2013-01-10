@@ -260,7 +260,7 @@ func (r *Radix32) find(n uint32, bits, bit int, last *Radix32) *Radix32 {
 	switch r.Leaf() {
 	case false:
 		if r.branch[k] == nil {
-			return r
+			return last
 		}
 		if r.bits != 0 {
 			// TODO(mg) double check, think this is correct i.e using bits
