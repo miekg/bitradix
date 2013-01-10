@@ -77,7 +77,7 @@ func (r *Radix64) find(n uint64, bits, bit int, last *Radix64) *Radix64 {
 		}
 		return r.branch[bitK64(n, bit)].find(n, bits, bit-1, last)
 	case true:
-		mask := uint64(mask64 << uint(r.bits))
+		mask := uint64(mask64 << (bitSize64 - uint(r.bits)))
 		if r.key&mask == n&mask {
 			return r
 		}
