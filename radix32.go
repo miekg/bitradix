@@ -189,6 +189,7 @@ func (r *Radix32) remove(n uint32, bits, bit int) *Radix32 {
 		}
 	}
 	k := bitK32(n, bit)
+	println(k)
 	if r.Leaf() || r.branch[k] == nil { // dead end
 		println("Dead end", n)
 		return nil
@@ -204,6 +205,7 @@ func (r *Radix32) prune(b bool) {
 			r.bits = 0
 			r.key = 0
 			r.Value = 0
+			println("PARENT NUL")
 			return
 		}
 		// we are a node, we have a parent, so the parent is 
@@ -217,12 +219,14 @@ func (r *Radix32) prune(b bool) {
 		}
 		r.parent.prune(false)
 	}
-	if r.bits != 0 {
-		// fun stops
-		return
-	}
 	if r.parent == nil {
 		// fun stops
+		println("pruning fun stops", r.Value)
+		return
+	}
+	if r.parent.bits != 0 {
+		// fun stops
+		println("bitsi fuck", r.bits, r.Value)
 		return
 	}
 	// Does my parent have one or two childeren, if one, move my self up one node
