@@ -8,6 +8,10 @@
 //    October 1968
 package bitradix
 
+import (
+	"strconv"
+)
+
 // With help from:
 // http://faculty.simpson.edu/lydia.sinapova/www/cmsc250/LN250_Weiss/L08-Radix.htm
 
@@ -25,12 +29,12 @@ type Radix32 struct {
 	key    uint32 // the key under which this value is stored
 	bits   int    // the number of significant bits, if 0 the key has not been set.
 	Value  uint32 // The value stored.
-	leaf   bool   // leaf node
+	// A leaf node is a node where both branches are nil 
 }
 
 // New32 returns an empty, initialized Radix32 tree.
 func New32() *Radix32 {
-	return &Radix32{[2]*Radix32{nil, nil}, nil, 0, 0, 0, true}
+	return &Radix32{[2]*Radix32{nil, nil}, nil, 0, 0, 0}
 }
 
 // Key returns the key under which this node is stored.
@@ -47,22 +51,7 @@ func (r *Radix32) Bits() int {
 // Leaf returns true is r is an leaf node, when false is returned
 // the node is a non-leaf node.
 func (r *Radix32) Leaf() bool {
-	return r.leaf
-}
-
-// return the number of leaf branches for this node
-func (r *Radix32) leafs() (i int) {
-	if r.leaf {
-		return 0
-	}
-	// must be two filled branches
-	if r.branch[0].leaf {
-		i++
-	}
-	if r.branch[1].leaf {
-		i++
-	}
-	return
+	return r.branch[0] == nil && r.branch[1] == nil
 }
 
 // Insert inserts a new value n in the tree r. The first bits bits of n are significant
@@ -95,10 +84,11 @@ func (r *Radix32) Do(f func(*Radix32, int, int)) {
 	x := q.Pop()
 	for x != nil {
 		f(x.Radix32, x.level, x.branch)
-		for i, b := range x.Radix32.branch {
-			if b != nil {
-				q.Push(&node32{b, level, i})
-			}
+		if b := x.Radix32.branch[0]; b != nil {
+			q.Push(&node32{b, level, 0})
+		}
+		if b := x.Radix32.branch[1]; b != nil {
+			q.Push(&node32{b, level, 1})
 		}
 		level++
 		x = q.Pop()
@@ -107,8 +97,9 @@ func (r *Radix32) Do(f func(*Radix32, int, int)) {
 
 // Implement insert
 func (r *Radix32) insert(n uint32, bits int, v uint32, bit int) *Radix32 {
-	switch r.leaf {
+	switch r.Leaf() {
 	case false:
+		// if bitSize32-bits == bit { // seen all bits, put something here
 		if bitSize32-bits == bit { // we need to store a value here
 			// TODO(mg): check previous value?
 			r.key = n
@@ -117,8 +108,12 @@ func (r *Radix32) insert(n uint32, bits int, v uint32, bit int) *Radix32 {
 			// keep it a non-leaf
 			return r
 		}
-		// non-leaf node, no key. With branches, walk the branches.
-		return r.branch[bitK32(n, bit)].insert(n, bits, v, bit-1)
+		// Non-leaf node, no key, one or two branches
+		k := bitK32(n, bit)
+		if r.branch[k] == nil {
+			r.branch[k] = New32() // create missing branch
+		}
+		return r.branch[k].insert(n, bits, v, bit-1)
 	case true:
 		// External node, (optional) key, no branches
 		if r.bits == 0 { // nothing here yet, put something in
@@ -137,24 +132,19 @@ func (r *Radix32) insert(n uint32, bits int, v uint32, bit int) *Radix32 {
 			return r
 		}
 
-		// create new branches, and go from there
-		r.branch[0], r.branch[1] = New32(), New32()
-		r.branch[0].parent, r.branch[1].parent = r, r
-		r.leaf = false // becomes an non-leaf node by definition
-
 		bcur := bitK32(r.key, bit)
 		bnew := bitK32(n, bit)
-		// fmt.Printf("r.key %032b %d\n", r.key, bit)
-		// fmt.Printf("n     %032b %d\n", n, bit)
 
 		switch x := bitSize32 - r.bits; true {
 		case x == bit: // current node needs to stay here
 			// put new stuff in the branch below
+			r.branch[bnew] = New32()
 			r.branch[bnew].key = n
 			r.branch[bnew].Value = v
 			r.branch[bnew].bits = bits
 			return r.branch[bnew]
 		case x < bit: // current node can be put one level down
+			r.branch[bcur] = New32()
 			if bcur == bnew {
 				// "fill" the correct node, with the current key - and call ourselves
 				r.branch[bcur].key = r.key
@@ -165,6 +155,7 @@ func (r *Radix32) insert(n uint32, bits int, v uint32, bit int) *Radix32 {
 				r.Value = 0
 				return r.branch[bnew].insert(n, bits, v, bit-1)
 			}
+			r.branch[bnew] = New32()
 			// bcur = 0, bnew == 1 or vice versa
 			r.branch[bcur].key = r.key
 			r.branch[bcur].Value = r.Value
@@ -192,7 +183,7 @@ func (r *Radix32) remove(n uint32, bits, bit int) *Radix32 {
 		mask := uint32(mask32 << uint(r.bits))
 		if r.key&mask == n&mask {
 			// save r in r1
-			r1 := &Radix32{[2]*Radix32{nil, nil}, nil, r.key, r.bits, r.Value, r.leaf}
+			r1 := &Radix32{[2]*Radix32{nil, nil}, nil, r.key, r.bits, r.Value}
 			println("start pruning", r.Value)
 			//r.bits = 0
 			//r.key = 0
@@ -202,8 +193,9 @@ func (r *Radix32) remove(n uint32, bits, bit int) *Radix32 {
 			return r1
 		}
 	}
-	if r.leaf {
-		return nil // dead end
+	k := bitK32(n, bit)
+	if r.Leaf() || r.branch[k] == nil { // dead end
+		return nil
 	}
 	return r.branch[bitK32(n, bit)].remove(n, bits, bit-1)
 }
@@ -222,7 +214,6 @@ func (r *Radix32) prune(b bool) {
 		if r.parent.branch[1] == r {
 			println(r, "upping 0")
 			r.parent = r.parent.branch[0]
-			println(r.parent.leaf)
 			println(r.parent.branch[0], r.parent.branch[1])
 		}
 
@@ -234,14 +225,18 @@ func (r *Radix32) prune(b bool) {
 // node, when we don't find anything within the allowed bit bits
 // we return that one.
 func (r *Radix32) find(n uint32, bits, bit int, last *Radix32) *Radix32 {
-	switch r.leaf {
+	k := bitK32(n, bit)
+	switch r.Leaf() {
 	case false:
+		if r.branch[k] == nil {
+			return r
+		}
 		if r.bits != 0 {
 			// Actual key, drag it along
-			// TODO(mg): check if its the key
-			return r.branch[bitK32(n, bit)].find(n, bits, bit-1, r)
+			// TODO(mg): check if its THE key
+			return r.branch[k].find(n, bits, bit-1, r)
 		}
-		return r.branch[bitK32(n, bit)].find(n, bits, bit-1, last)
+		return r.branch[k].find(n, bits, bit-1, last)
 	case true:
 		mask := uint32(mask32 << uint(r.bits))
 		if r.key&mask == n&mask {
@@ -258,4 +253,20 @@ func (r *Radix32) find(n uint32, bits, bit int, last *Radix32) *Radix32 {
 // So k = 0 is the last bit on the left and k = 31 is the first bit on the right.
 func bitK32(n uint32, k int) byte {
 	return byte((n & (1 << uint(k))) >> uint(k))
+}
+
+func (r *Radix32) String() string {
+	return r.stringHelper("")
+}
+
+func (r *Radix32) stringHelper(indent string) (s string) {
+	s = indent + " '" + strconv.Itoa(int(r.key)) + "'" + ":"
+	s += "\n"
+	for i, b := range r.branch {
+		if b == nil {
+			continue
+		}
+		s += indent + string(i) + ":" + b.stringHelper("  "+indent)
+	}
+	return s
 }
