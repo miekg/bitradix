@@ -18,7 +18,8 @@ const (
 	mask64    = 0xFFFFFFFFFFFFFFFF
 )
 
-// Radix32 implements a radix tree with an uint32 as its key.
+// Radix32 implements a radix tree with an uint32 as its key. When inserting duplicate
+// keys the old value is silently overwritten.
 type Radix32 struct {
 	branch [2]*Radix32 // branch[0] is left branch for 0, and branch[1] the right for 1
 	parent *Radix32
@@ -57,7 +58,7 @@ func (r *Radix32) Insert(n uint32, bits int, v uint32) *Radix32 {
 }
 
 // Remove removes a value from the tree r. It returns the node removed, or nil
-// when nothing is found. r must be the root of the tree.
+// when nothing is found, r must be the root of the tree.
 func (r *Radix32) Remove(n uint32, bits int) *Radix32 {
 	return r.remove(n, bits, bitSize32-1)
 }
@@ -196,7 +197,6 @@ func (r *Radix32) remove(n uint32, bits, bit int) *Radix32 {
 func (r *Radix32) prune(b bool) {
 	if b {
 		if r.parent == nil {
-			// root node
 			r.bits = 0
 			r.key = 0
 			r.Value = 0
@@ -264,7 +264,7 @@ func (r *Radix32) find(n uint32, bits, bit int, last *Radix32) *Radix32 {
 			return r
 		}
 		if r.bits != 0 {
-			// TODO(mg) double check, think this is correct
+			// TODO(mg) double check, think this is correct i.e using bits
 			mask := uint32(mask32 << (bitSize32 - uint(bits)))
 			if r.key&mask == n&mask {
 				return r

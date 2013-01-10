@@ -1,7 +1,8 @@
 package bitradix
 
-// Radix64 implements a radix tree with an uint64 as its key. The methods
-// are identical to those of Radix32, except for the key length.
+// Radix64 implements a radix tree with an uint64 as its key. When inserting duplicate             
+// keys the old value is silently overwritten.   
+// The methods are identical to those of Radix32, except for the key length used.
 type Radix64 struct {
 	branch [2]*Radix64 // branch[0] is left branch for 0, and branch[1] the right for 1
 	parent *Radix64
@@ -133,21 +134,99 @@ func (r *Radix64) insert(n uint64, bits int, v uint32, bit int) *Radix64 {
 }
 
 func (r *Radix64) remove(n uint64, bits, bit int) *Radix64 {
-	return nil
+	if r.bits > 0 && r.bits == bits {
+		// possible hit
+		mask := uint64(mask64 << (bitSize64 - uint(r.bits)))
+		if r.key&mask == n&mask {
+			// save r in r1
+			r1 := &Radix64{[2]*Radix64{nil, nil}, nil, r.key, r.bits, r.Value}
+			r.prune(true)
+			return r1
+		}
+	}
+	k := bitK64(n, bit)
+	if r.Leaf() || r.branch[k] == nil { // dead end
+		return nil
+	}
+	return r.branch[bitK64(n, bit)].remove(n, bits, bit-1)
 }
 
 func (r *Radix64) prune(b bool) {
-	return
+	if b {
+		if r.parent == nil {
+			r.bits = 0
+			r.key = 0
+			r.Value = 0
+			return
+		}
+		// we are a node, we have a parent, so the parent is a non-leaf node
+		if r.parent.branch[0] == r {
+			// kill that branch
+			r.parent.branch[0] = nil
+		}
+		if r.parent.branch[1] == r {
+			r.parent.branch[1] = nil
+		}
+		r.parent.prune(false)
+		return
+	}
+	if r == nil {
+		return
+	}
+	if r.bits != 0 {
+		// fun stops
+		return
+	}
+	// Does I have one or two childeren, if one, move my self up one node
+	// Also the child must be a leaf node!
+	b0 := r.branch[0]
+	b1 := r.branch[1]
+	if b0 != nil && b1 != nil {
+		// two branches, we cannot replace ourselves with a child
+		return
+	}
+	switch b0 != nil {
+	case true:
+		if !b0.Leaf() {
+			return
+		}
+		// move b0 into this node	
+		r.key = b0.key
+		r.bits = b0.bits
+		r.Value = b0.Value
+		r.branch[0] = b0.branch[0]
+		r.branch[1] = b0.branch[1]
+	case false:
+		if !b1.Leaf() {
+			return
+		}
+		// move b1 into this node
+		r.key = b1.key
+		r.bits = b1.bits
+		r.Value = b1.Value
+		r.branch[0] = b1.branch[0]
+		r.branch[1] = b1.branch[1]
+	}
+	r.parent.prune(false)
 }
 
 func (r *Radix64) find(n uint64, bits, bit int, last *Radix64) *Radix64 {
+	k := bitK64(n, bit)
 	switch r.Leaf() {
 	case false:
-		if r.bits != 0 {
-			// Actual key, drag it along
-			return r.branch[bitK64(n, bit)].find(n, bits, bit-1, r)
+		if r.branch[k] == nil {
+			return r
 		}
-		return r.branch[bitK64(n, bit)].find(n, bits, bit-1, last)
+		if r.bits != 0 {
+			// TODO(mg) double check, think this is correct i.e using bits
+			mask := uint64(mask64 << (bitSize64 - uint(bits)))
+			if r.key&mask == n&mask {
+				return r
+			}
+			// A key, drag it along
+			return r.branch[k].find(n, bits, bit-1, r)
+		}
+		return r.branch[k].find(n, bits, bit-1, last)
 	case true:
 		mask := uint64(mask64 << (bitSize64 - uint(r.bits)))
 		if r.key&mask == n&mask {
