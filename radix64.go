@@ -1,7 +1,6 @@
 package bitradix
 
-// Radix64 implements a radix tree with an uint64 as its key. When inserting duplicate             
-// keys the old value is silently overwritten.   
+// Radix64 implements a radix tree with an uint64 as its key.
 // The methods are identical to those of Radix32, except for the key length used.
 type Radix64 struct {
 	branch [2]*Radix64 // branch[0] is left branch for 0, and branch[1] the right for 1
