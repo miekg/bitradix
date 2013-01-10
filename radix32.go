@@ -112,6 +112,7 @@ func (r *Radix32) insert(n uint32, bits int, v uint32, bit int) *Radix32 {
 		k := bitK32(n, bit)
 		if r.branch[k] == nil {
 			r.branch[k] = New32() // create missing branch
+			r.branch[k].parent = r
 		}
 		return r.branch[k].insert(n, bits, v, bit-1)
 	case true:
@@ -139,12 +140,14 @@ func (r *Radix32) insert(n uint32, bits int, v uint32, bit int) *Radix32 {
 		case x == bit: // current node needs to stay here
 			// put new stuff in the branch below
 			r.branch[bnew] = New32()
+			r.branch[bnew].parent = r
 			r.branch[bnew].key = n
 			r.branch[bnew].Value = v
 			r.branch[bnew].bits = bits
 			return r.branch[bnew]
 		case x < bit: // current node can be put one level down
 			r.branch[bcur] = New32()
+			r.branch[bcur].parent = r
 			if bcur == bnew {
 				// "fill" the correct node, with the current key - and call ourselves
 				r.branch[bcur].key = r.key
@@ -156,6 +159,7 @@ func (r *Radix32) insert(n uint32, bits int, v uint32, bit int) *Radix32 {
 				return r.branch[bnew].insert(n, bits, v, bit-1)
 			}
 			r.branch[bnew] = New32()
+			r.branch[bnew].parent = r
 			// bcur = 0, bnew == 1 or vice versa
 			r.branch[bcur].key = r.key
 			r.branch[bcur].Value = r.Value
@@ -206,17 +210,12 @@ func (r *Radix32) prune(b bool) {
 		// we are a node, we have a parent, so the parent is 
 		// a non-leaf node
 		if r.parent.branch[0] == r {
-			println(r, "upping 1")
-			println(r.parent.Value)
-			r.parent = r.parent.branch[1] // parent parent is wrong now
-			println(r.parent.Value)
+			// kill the branch
+			r.parent.branch[0] = nil
 		}
 		if r.parent.branch[1] == r {
-			println(r, "upping 0")
-			r.parent = r.parent.branch[0]
-			println(r.parent.branch[0], r.parent.branch[1])
+			r.parent.branch[1] = nil
 		}
-
 	}
 	return
 }
@@ -253,20 +252,4 @@ func (r *Radix32) find(n uint32, bits, bit int, last *Radix32) *Radix32 {
 // So k = 0 is the last bit on the left and k = 31 is the first bit on the right.
 func bitK32(n uint32, k int) byte {
 	return byte((n & (1 << uint(k))) >> uint(k))
-}
-
-func (r *Radix32) String() string {
-	return r.stringHelper("")
-}
-
-func (r *Radix32) stringHelper(indent string) (s string) {
-	s = indent + " '" + strconv.Itoa(int(r.key)) + "'" + ":"
-	s += "\n"
-	for i, b := range r.branch {
-		if b == nil {
-			continue
-		}
-		s += indent + string(i) + ":" + b.stringHelper("  "+indent)
-	}
-	return s
 }
