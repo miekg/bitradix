@@ -76,17 +76,23 @@ func TestRemove(t *testing.T) {
 	r.Insert(k, bits32, v)
 
 	t.Logf("Tree complete\n")
-	r.Do(func(r1 *Radix32, l, i int) { t.Logf("%s [%010p %010p] (%2d): %032b/%d -> %d\n", strings.Repeat(" ", l), r1.branch[0], r1.branch[1], i, r1.key, r1.bits, r1.Value) })
+	r.Do(func(r1 *Radix32, l, i int) {
+		t.Logf("%s [%010p %010p] (%2d): %032b/%d -> %d\n", strings.Repeat(" ", l), r1.branch[0], r1.branch[1], i, r1.key, r1.bits, r1.Value)
+	})
 
 	k, v = uint32(0x90000000), 2013
 	t.Logf("Tree after removal of %032b/%d %d (%x %d)\n", k, bits32, v, k, k)
 	r.Remove(k, bits32)
-	r.Do(func(r1 *Radix32, l, i int) { t.Logf("%s [%010p %010p] (%2d): %032b/%d -> %d\n", strings.Repeat(" ", l), r1.branch[0], r1.branch[1], i, r1.key, r1.bits, r1.Value) })
+	r.Do(func(r1 *Radix32, l, i int) {
+		t.Logf("%s [%010p %010p] (%2d): %032b/%d -> %d\n", strings.Repeat(" ", l), r1.branch[0], r1.branch[1], i, r1.key, r1.bits, r1.Value)
+	})
 
 	k, v = uint32(0x80000000), 2010
 	t.Logf("Tree after removal of %032b/%d %d (%x %d)\n", k, bits32, v, k, k)
 	r.Remove(k, bits32)
-	r.Do(func(r1 *Radix32, l, i int) { t.Logf("%s [%010p %010p] (%2d): %032b/%d -> %d\n", strings.Repeat(" ", l), r1.branch[0], r1.branch[1], i, r1.key, r1.bits, r1.Value) })
+	r.Do(func(r1 *Radix32, l, i int) {
+		t.Logf("%s [%010p %010p] (%2d): %032b/%d -> %d\n", strings.Repeat(" ", l), r1.branch[0], r1.branch[1], i, r1.key, r1.bits, r1.Value)
+	})
 }
 
 // Test with "real-life" ip addresses
