@@ -180,7 +180,7 @@ func (r *Radix32) insert(n uint32, bits int, v uint32, bit int) *Radix32 {
 func (r *Radix32) remove(n uint32, bits, bit int) *Radix32 {
 	if r.bits > 0 && r.bits == bits {
 		// possible hit
-		mask := uint32(mask32 << uint(r.bits))
+		mask := uint32(mask32 << (bitSize32 - uint(r.bits)))
 		if r.key&mask == n&mask {
 			// save r in r1
 			r1 := &Radix32{[2]*Radix32{nil, nil}, nil, r.key, r.bits, r.Value}
@@ -189,9 +189,7 @@ func (r *Radix32) remove(n uint32, bits, bit int) *Radix32 {
 		}
 	}
 	k := bitK32(n, bit)
-	println(k)
 	if r.Leaf() || r.branch[k] == nil { // dead end
-		println("Dead end", n)
 		return nil
 	}
 	return r.branch[bitK32(n, bit)].remove(n, bits, bit-1)
@@ -199,26 +197,21 @@ func (r *Radix32) remove(n uint32, bits, bit int) *Radix32 {
 
 // Prune the tree
 func (r *Radix32) prune(b bool) {
-	println("Called")
 	if b {
-		println("NUKING")
 		if r.parent == nil {
 			// root node
 			r.bits = 0
 			r.key = 0
 			r.Value = 0
-			println("PARENT NUL")
 			return
 		}
 		// we are a node, we have a parent, so the parent is 
 		// a non-leaf node
 		if r.parent.branch[0] == r {
 			// kill the branch
-			println("Killing 0", r)
 			r.parent.branch[0] = nil
 		}
 		if r.parent.branch[1] == r {
-			println("Killing 1", r)
 			r.parent.branch[1] = nil
 		}
 		r.parent.prune(false)
@@ -229,7 +222,6 @@ func (r *Radix32) prune(b bool) {
 	}
 	if r.bits != 0 {
 		// fun stops
-		println("bitsi fuck", r.bits, r.Value)
 		return
 	}
 	// Does I have one or two childeren, if one, move my self up one node
@@ -237,14 +229,12 @@ func (r *Radix32) prune(b bool) {
 	b0 := r.branch[0]
 	b1 := r.branch[1]
 	if b0 != nil && b1 != nil {
-		println("two branches")
 		// two branches, we cannot replace ourselves with a child
 		return
 	}
 	switch b0 != nil {
 	case true:
 		if !b0.Leaf() {
-			println("NOT A LEAF 0")
 			return
 		}
 		// move b0 into this node	
@@ -255,7 +245,6 @@ func (r *Radix32) prune(b bool) {
 		r.branch[1] = b0.branch[1]
 	case false:
 		if !b1.Leaf() {
-			println("NOT A LEAF 1")
 			return
 		}
 		// move b1 into this node
@@ -285,7 +274,7 @@ func (r *Radix32) find(n uint32, bits, bit int, last *Radix32) *Radix32 {
 		}
 		return r.branch[k].find(n, bits, bit-1, last)
 	case true:
-		mask := uint32(mask32 << uint(r.bits))
+		mask := uint32(mask32 << (bitSize32 - uint(r.bits)))
 		if r.key&mask == n&mask {
 			return r
 		}
