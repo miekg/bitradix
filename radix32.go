@@ -234,6 +234,7 @@ func (r *Radix32) prune(b bool) {
 		return
 	}
 	// Does I have one or two childeren, if one, move my self up one node
+	// Also the child must be a leaf node!
 	b0 := r.branch[0]
 	b1 := r.branch[1]
 	if b0 != nil && b1 != nil {
@@ -243,6 +244,10 @@ func (r *Radix32) prune(b bool) {
 	}
 	switch b0 != nil {
 	case true:
+		if !b0.Leaf() {
+			println("NOT A LEAF 0")
+			return
+		}
 		// move b0 into this node	
 		r.key = b0.key
 		r.bits = b0.bits
@@ -250,6 +255,10 @@ func (r *Radix32) prune(b bool) {
 		r.branch[0] = b0.branch[0]
 		r.branch[1] = b0.branch[1]
 	case false:
+		if !b1.Leaf() {
+			println("NOT A LEAF 1")
+			return
+		}
 		// move b1 into this node
 		r.key = b1.key
 		r.bits = b1.bits

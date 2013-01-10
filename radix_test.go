@@ -69,25 +69,24 @@ func TestFindExact(t *testing.T) {
 }
 
 func TestRemove(t *testing.T) {
-	r := New32()
-	k, v := uint32(0x90000000), uint32(2013)
-	r.Insert(k, bits32, v)
-	k, v = uint32(0x80000000), uint32(2010)
-	r.Insert(k, bits32, v)
-
+	r := newTree32()
 	t.Logf("Tree complete\n")
 	r.Do(func(r1 *Radix32, l, i int) {
 		t.Logf("%s [%010p %010p] (%2d): %032b/%d -> %d\n", strings.Repeat(" ", l), r1.branch[0], r1.branch[1], i, r1.key, r1.bits, r1.Value)
 	})
-
-	k, v = uint32(0x90000000), 2013
+	k, v := uint32(0x40000000), uint32(2010)
 	t.Logf("Tree after removal of %032b/%d %d (%x %d)\n", k, bits32, v, k, k)
 	r.Remove(k, bits32)
 	r.Do(func(r1 *Radix32, l, i int) {
 		t.Logf("%s [%010p %010p] (%2d): %032b/%d -> %d\n", strings.Repeat(" ", l), r1.branch[0], r1.branch[1], i, r1.key, r1.bits, r1.Value)
 	})
-
-	k, v = uint32(0x80000000), 2010
+	k, v = uint32(0x80000000), uint32(2012)
+	t.Logf("Tree after removal of %032b/%d %d (%x %d)\n", k, bits32, v, k, k)
+	r.Remove(k, bits32)
+	r.Do(func(r1 *Radix32, l, i int) {
+		t.Logf("%s [%010p %010p] (%2d): %032b/%d -> %d\n", strings.Repeat(" ", l), r1.branch[0], r1.branch[1], i, r1.key, r1.bits, r1.Value)
+	})
+	k, v = uint32(0x90000000), uint32(2013)
 	t.Logf("Tree after removal of %032b/%d %d (%x %d)\n", k, bits32, v, k, k)
 	r.Remove(k, bits32)
 	r.Do(func(r1 *Radix32, l, i int) {
