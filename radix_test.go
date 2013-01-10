@@ -124,6 +124,10 @@ func ipToUint(t *testing.T, n *net.IPNet) (i uint32, mask int) {
 	return
 }
 
+func uintToIP(n uint32) net.IP {
+	return net.IPv4(byte(n>>24), byte(n>>16), byte(n>>8), byte(n))
+}
+
 func addRoute(t *testing.T, r *Radix32, s string, asn uint32) {
 	_, ipnet, _ := net.ParseCIDR(s)
 	net, mask := ipToUint(t, ipnet)
@@ -168,7 +172,7 @@ func TestFindIP(t *testing.T) {
 
 	for ip, asn := range testips {
 		if x := findRoute(t, r, ip); asn != x {
-			t.Logf("Expected %d, got %d for %si %T\n", asn, x, ip, x)
+			t.Logf("Expected %d, got %d for %ss\n", asn, x, ip)
 			t.Fail()
 		}
 	}
