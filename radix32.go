@@ -75,7 +75,7 @@ func (r *Radix32) Find(n uint32, bits int) *Radix32 {
 func (r *Radix32) Do(f func(*Radix32, int, int)) {
 	q := make(queue32, 0)
 
-	level := 0	// TODO(mg): Does level really works as intended??
+	level := 0 // TODO(mg): Does level really works as intended??
 	q.Push(&node32{r, level, -1})
 	x := q.Pop()
 	for x != nil {
@@ -164,7 +164,7 @@ func (r *Radix32) insert(n uint32, bits int, v uint32, bit int) *Radix32 {
 			r.Value = 0
 			r.bits = 0
 			return r.branch[bnew]
-		case x > bit: // node is at the wrong spot
+		case x > bit:
 			panic("bitradix: node put too far down")
 		}
 

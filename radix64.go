@@ -57,6 +57,78 @@ func (r *Radix64) Do(f func(*Radix64, int, int)) {
 }
 
 func (r *Radix64) insert(n uint64, bits int, v uint32, bit int) *Radix64 {
+	switch r.Leaf() {
+	case false:
+		if bitSize64-bits == bit { // we need to store a value here
+			r.key = n
+			r.bits = bits
+			r.Value = v
+			return r
+		}
+		// Non-leaf node, no key, one or two branches
+		k := bitK64(n, bit)
+		if r.branch[k] == nil {
+			r.branch[k] = New64() // create missing branch
+			r.branch[k].parent = r
+		}
+		return r.branch[k].insert(n, bits, v, bit-1)
+	case true:
+		// External node, (optional) key, no branches
+		if r.bits == 0 { // nothing here yet, put something in
+			r.bits = bits
+			r.key = n
+			r.Value = v
+			return r
+		}
+		if bitSize64-bits == bit { // seen all bits, put something here
+			r.bits = bits
+			r.key = n
+			r.Value = v
+			return r
+		}
+
+		bcur := bitK64(r.key, bit)
+		bnew := bitK64(n, bit)
+
+		switch x := bitSize64 - r.bits; true {
+		case x == bit: // current node needs to stay here
+			r.branch[bnew] = New64()
+			r.branch[bnew].parent = r
+			r.branch[bnew].key = n
+			r.branch[bnew].Value = v
+			r.branch[bnew].bits = bits
+			return r.branch[bnew]
+		case x < bit: // current node can be put one level down
+			r.branch[bcur] = New64()
+			r.branch[bcur].parent = r
+			if bcur == bnew {
+				// "fill" the correct node, with the current key - and call ourselves
+				r.branch[bcur].key = r.key
+				r.branch[bcur].Value = r.Value
+				r.branch[bcur].bits = r.bits
+				r.bits = 0
+				r.key = 0
+				r.Value = 0
+				return r.branch[bnew].insert(n, bits, v, bit-1)
+			}
+			r.branch[bnew] = New64()
+			r.branch[bnew].parent = r
+			// bcur = 0, bnew == 1 or vice versa
+			r.branch[bcur].key = r.key
+			r.branch[bcur].Value = r.Value
+			r.branch[bcur].bits = r.bits
+			r.branch[bnew].key = n
+			r.branch[bnew].Value = v
+			r.branch[bnew].bits = bits
+			r.key = 0
+			r.Value = 0
+			r.bits = 0
+			return r.branch[bnew]
+		case x > bit:
+			panic("bitradix: node put too far down")
+		}
+	}
+	panic("bitradix: not reached")
 	return nil
 }
 

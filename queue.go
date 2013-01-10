@@ -9,7 +9,7 @@ type queue32 []*node32
 
 type node64 struct {
 	*Radix64
-	level int
+	level  int
 	branch int // -1 root, 0 left branch, 1 right branch
 }
 type queue64 []*node64
