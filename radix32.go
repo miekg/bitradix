@@ -60,6 +60,7 @@ func (r *Radix32) Insert(n uint32, bits int, v uint32) *Radix32 {
 // Remove removes a value from the tree r. It returns the node removed, or nil
 // when nothing is found. r must be the root of the tree.
 func (r *Radix32) Remove(n uint32, bits int) *Radix32 {
+	println("REMOVE CALLED")
 	return r.remove(n, bits, bitSize32-1)
 }
 
@@ -199,7 +200,9 @@ func (r *Radix32) remove(n uint32, bits, bit int) *Radix32 {
 
 // Prune the tree
 func (r *Radix32) prune(b bool) {
+	println("Called")
 	if b {
+		println("NUKING")
 		if r.parent == nil {
 			// root node
 			r.bits = 0
@@ -212,37 +215,48 @@ func (r *Radix32) prune(b bool) {
 		// a non-leaf node
 		if r.parent.branch[0] == r {
 			// kill the branch
+			println("Killing 0", r)
 			r.parent.branch[0] = nil
 		}
 		if r.parent.branch[1] == r {
+			println("Killing 1", r)
 			r.parent.branch[1] = nil
 		}
 		r.parent.prune(false)
-	}
-	if r.parent == nil {
-		// fun stops
-		println("pruning fun stops", r.Value)
 		return
 	}
-	if r.parent.bits != 0 {
+	if r == nil {
+		return
+	}
+	if r.bits != 0 {
 		// fun stops
 		println("bitsi fuck", r.bits, r.Value)
 		return
 	}
-	// Does my parent have one or two childeren, if one, move my self up one node
-	b0 := r.parent.branch[0]
-	b1 := r.parent.branch[1]
+	// Does I have one or two childeren, if one, move my self up one node
+	b0 := r.branch[0]
+	b1 := r.branch[1]
 	if b0 != nil && b1 != nil {
-		// two branches, we cannot replace the node
+		println("two branches")
+		// two branches, we cannot replace ourselves with a child
 		return
 	}
-	// one branch, move up
-	r.parent.key = r.key
-	r.parent.Value = r.Value
-	// r.parent.parent // Keep!
-	r.parent.bits = r.bits
-	r.parent.branch[0] = r.branch[0]
-	r.parent.branch[1] = r.branch[1]
+	switch b0 != nil {
+	case true:
+		// move b0 into this node	
+		r.key = b0.key
+		r.bits = b0.bits
+		r.Value = b0.Value
+		r.branch[0] = b0.branch[0]
+		r.branch[1] = b0.branch[1]
+	case false:
+		// move b1 into this node
+		r.key = b1.key
+		r.bits = b1.bits
+		r.Value = b1.Value
+		r.branch[0] = b1.branch[0]
+		r.branch[1] = b1.branch[1]
+	}
 	r.parent.prune(false)
 }
 
