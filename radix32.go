@@ -6,10 +6,11 @@
 //    Donald R. Morrison. "PATRICIA -- practical algorithm to retrieve
 //    information coded in alphanumeric". Journal of the ACM, 15(4):514-534,
 //    October 1968
+// 
+// This website provides some background information on Radix trees.
+// http://faculty.simpson.edu/lydia.sinapova/www/cmsc250/LN250_Weiss/L08-Radix.htm
 package bitradix
 
-// With help from:
-// http://faculty.simpson.edu/lydia.sinapova/www/cmsc250/LN250_Weiss/L08-Radix.htm
 
 const (
 	bitSize32 = 32
