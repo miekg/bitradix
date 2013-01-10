@@ -7,6 +7,13 @@ type node32 struct {
 }
 type queue32 []*node32
 
+type node64 struct {
+	*Radix64
+	level int
+	branch int // -1 root, 0 left branch, 1 right branch
+}
+type queue64 []*node64
+
 // Push adds a node32 to the queue.
 func (q *queue32) Push(n *node32) {
 	*q = append(*q, n)
@@ -27,13 +34,6 @@ func (q *queue32) Pop() *node32 {
 	}
 	return n
 }
-
-type node64 struct {
-	*Radix64
-	// level int
-	branch int // -1 root, 0 left branch, 1 right branch
-}
-type queue64 []*node64
 
 func (q *queue64) Push(n *node64) {
 	*q = append(*q, n)

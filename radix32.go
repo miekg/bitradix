@@ -60,7 +60,6 @@ func (r *Radix32) Insert(n uint32, bits int, v uint32) *Radix32 {
 // Remove removes a value from the tree r. It returns the node removed, or nil
 // when nothing is found. r must be the root of the tree.
 func (r *Radix32) Remove(n uint32, bits int) *Radix32 {
-	println("REMOVE CALLED")
 	return r.remove(n, bits, bitSize32-1)
 }
 
@@ -71,7 +70,8 @@ func (r *Radix32) Find(n uint32, bits int) *Radix32 {
 }
 
 // Do traverses the tree r in breadth-first order. For each visited node,
-// the function f is called with the current node and the branch taken
+// the function f is called with the current node, the level of the node
+// (starting with 0 for the root), and the branch taken
 // (0 for the zero, 1 for the one branch, -1 is used for the root node).
 func (r *Radix32) Do(f func(*Radix32, int, int)) {
 	q := make(queue32, 0)
@@ -81,11 +81,10 @@ func (r *Radix32) Do(f func(*Radix32, int, int)) {
 	x := q.Pop()
 	for x != nil {
 		f(x.Radix32, x.level, x.branch)
-		if b := x.Radix32.branch[0]; b != nil {
-			q.Push(&node32{b, level, 0})
-		}
-		if b := x.Radix32.branch[1]; b != nil {
-			q.Push(&node32{b, level, 1})
+		for i, b := range x.Radix32.branch {
+			if b != nil {
+				q.Push(&node32{b, level, i})
+			}
 		}
 		level++
 		x = q.Pop()

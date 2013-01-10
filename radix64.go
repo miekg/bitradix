@@ -8,11 +8,10 @@ type Radix64 struct {
 	key    uint64 // the key under which this value is stored
 	bits   int    // the number of significant bits, if 0 the key has not been set.
 	Value  uint32 // The value stored.
-	leaf   bool   // leaf node
 }
 
 func New64() *Radix64 {
-	return &Radix64{[2]*Radix64{nil, nil}, nil, 0, 0, 0, true}
+	return &Radix64{[2]*Radix64{nil, nil}, nil, 0, 0, 0}
 }
 
 func (r *Radix64) Key() uint64 {
@@ -24,17 +23,7 @@ func (r *Radix64) Bits() int {
 }
 
 func (r *Radix64) Leaf() bool {
-	return r.leaf
-}
-
-func (r *Radix64) branches(i int) {
-	if r.branch[0] != nil {
-		i++
-	}
-	if r.branch[1] != nil {
-		i++
-	}
-	return
+	return r.branch[0] == nil && r.branch[1] == nil
 }
 
 func (r *Radix64) Insert(n uint64, bits int, v uint32) *Radix64 {
@@ -42,25 +31,27 @@ func (r *Radix64) Insert(n uint64, bits int, v uint32) *Radix64 {
 }
 
 func (r *Radix64) Remove(n uint64, bits int) *Radix64 {
-	return nil
+	return r.remove(n, bits, bitSize64-1)
 }
 
 func (r *Radix64) Find(n uint64, bits int) *Radix64 {
 	return r.find(n, bits, bitSize64-1, nil)
 }
 
-func (r *Radix64) Do(f func(*Radix64, int)) {
+func (r *Radix64) Do(f func(*Radix64, int, int)) {
 	q := make(queue64, 0)
 
-	q.Push(&node64{r, -1})
+	level := 0
+	q.Push(&node64{r, level, -1})
 	x := q.Pop()
 	for x != nil {
-		f(x.Radix64, x.branch)
+		f(x.Radix64, x.level, x.branch)
 		for i, b := range x.Radix64.branch {
 			if b != nil {
-				q.Push(&node64{b, i})
+				q.Push(&node64{b, level, i})
 			}
 		}
+		level++
 		x = q.Pop()
 	}
 }
@@ -69,8 +60,16 @@ func (r *Radix64) insert(n uint64, bits int, v uint32, bit int) *Radix64 {
 	return nil
 }
 
+func (r *Radix64) remove(uint64, bits int, v uint32, bit int) *Radix64 {
+	return nil
+}
+
+func (r *Radix64) prune(b bool) {
+	return
+}
+
 func (r *Radix64) find(n uint64, bits, bit int, last *Radix64) *Radix64 {
-	switch r.leaf {
+	switch r.Leaf() {
 	case false:
 		if r.bits != 0 {
 			// Actual key, drag it along
