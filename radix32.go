@@ -227,8 +227,7 @@ func (r *Radix32) prune(b bool) {
 		// two branches, we cannot replace ourselves with a child
 		return
 	}
-	switch b0 != nil {
-	case true:
+	if b0 != nil {
 		if !b0.Leaf() {
 			return
 		}
@@ -238,7 +237,8 @@ func (r *Radix32) prune(b bool) {
 		r.Value = b0.Value
 		r.branch[0] = b0.branch[0]
 		r.branch[1] = b0.branch[1]
-	case false:
+	}
+	if b1 != nil {
 		if !b1.Leaf() {
 			return
 		}
