@@ -184,11 +184,6 @@ func (r *Radix32) remove(n uint32, bits, bit int) *Radix32 {
 		if r.key&mask == n&mask {
 			// save r in r1
 			r1 := &Radix32{[2]*Radix32{nil, nil}, nil, r.key, r.bits, r.Value}
-			println("start pruning", r.Value)
-			//r.bits = 0
-			//r.key = 0
-			//r.Value = 0
-			println(r.branch[0], r.branch[1])
 			r.prune(true)
 			return r1
 		}
