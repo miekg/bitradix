@@ -10,7 +10,6 @@
 // http://faculty.simpson.edu/lydia.sinapova/www/cmsc250/LN250_Weiss/L08-Radix.htm
 package bitradix
 
-
 const (
 	bitSize32 = 32
 	bitSize64 = 64
@@ -22,8 +21,8 @@ const (
 type Radix32 struct {
 	branch [2]*Radix32 // branch[0] is left branch for 0, and branch[1] the right for 1
 	parent *Radix32
-	key    uint32 // the key under which this value is stored
-	bits   int    // the number of significant bits, if 0 the key has not been set.
+	key    uint32      // the key under which this value is stored
+	bits   int         // the number of significant bits, if 0 the key has not been set.
 	Value  interface{} // The value stored.
 }
 
@@ -94,15 +93,21 @@ func (r *Radix32) Do(f func(*Radix32, int, int)) {
 func (r *Radix32) insert(n uint32, bits int, v interface{}, bit int) *Radix32 {
 	switch r.Leaf() {
 	case false:
-		/*
-		if bitSize32-bits == bit { // we need to store a value here
-			println("STORING", bitSize32, bits, bit)
-			// TODO(mg): check previous value? And then what?
-			r.key = n
+		if r.parent != nil && r.bits == 0 { // nothing here yet, put something in
 			r.bits = bits
+			r.key = n
 			r.Value = v
 			return r
 		}
+		/*
+			if bitSize32-bits == bit { // we need to store a value here
+				println("STORING", bitSize32, bits, bit)
+				// TODO(mg): check previous value? And then what?
+				r.key = n
+				r.bits = bits
+				r.Value = v
+				return r
+			}
 		*/
 		// Non-leaf node, no key, one or two branches
 		k := bitK32(n, bit)
@@ -119,60 +124,32 @@ func (r *Radix32) insert(n uint32, bits int, v interface{}, bit int) *Radix32 {
 			r.Value = v
 			return r
 		}
-		/*
-		if bitSize32-bits == bit { // seen all bits, put something here
-			if r.bits != 0 {
-				// TODO(mg): prev value. What to do
-			}
+		if r.key == n { // equal keys, overwrite
+//			fmt.Printf("OVERWRITING, old value %d %d new %d %d\n", r.Value, r.bits, v, bits)
 			r.bits = bits
 			r.key = n
 			r.Value = v
 			return r
 		}
-		*/
-
 		bcur := bitK32(r.key, bit)
 		bnew := bitK32(n, bit)
-
-		switch x := bitSize32 - r.bits; true {
-		case x == bit: // current node needs to stay here
-			// put new stuff in the branch below
-			r.branch[bnew] = New32()
-			r.branch[bnew].parent = r
-			r.branch[bnew].key = n
-			r.branch[bnew].Value = v
-			r.branch[bnew].bits = bits
-			return r.branch[bnew]
-		case x < bit: // current node can be put one level down
+		if bcur == bnew {
 			r.branch[bcur] = New32()
 			r.branch[bcur].parent = r
-			if bcur == bnew {
-				// "fill" the correct node, with the current key - and call ourselves
-				r.branch[bcur].key = r.key
-				r.branch[bcur].Value = r.Value
-				r.branch[bcur].bits = r.bits
-				r.bits = 0
-				r.key = 0
-				r.Value = 0
-				return r.branch[bnew].insert(n, bits, v, bit-1)
-			}
-			r.branch[bnew] = New32()
-			r.branch[bnew].parent = r
-			// bcur = 0, bnew == 1 or vice versa
+			// "fill" the correct node, with the current key - and call ourselves
 			r.branch[bcur].key = r.key
 			r.branch[bcur].Value = r.Value
 			r.branch[bcur].bits = r.bits
-			r.branch[bnew].key = n
-			r.branch[bnew].Value = v
-			r.branch[bnew].bits = bits
+			r.bits = 0
 			r.key = 0
 			r.Value = 0
-			r.bits = 0
-			return r.branch[bnew]
-		case x > bit:
-			panic("bitradix: node put too far down")
+			return r.branch[bnew].insert(n, bits, v, bit-1)
 		}
-
+		// not equal
+		// keep current node, and branch of in child
+		r.branch[bnew] = New32()
+		r.branch[bnew].parent = r
+		return r.branch[bnew].insert(n, bits, v, bit-1)
 	}
 	panic("bitradix: not reached")
 }
@@ -262,26 +239,43 @@ func (r *Radix32) prune(b bool) {
 // we return that one.
 func (r *Radix32) find(n uint32, bits, bit int, last *Radix32) *Radix32 {
 	k := bitK32(n, bit)
+	if r == nil {
+		return last
+	}
 	switch r.Leaf() {
 	case false:
-		if r.branch[k] == nil {
-			return last
-		}
 		if r.bits != 0 {
-			// TODO(mg) double check, think this is correct i.e using bits
+			// TODO(mg) double check, think this is correct i.e using bits, not r.bits
+			// is is our key
 			mask := uint32(mask32 << (bitSize32 - uint(bits)))
 			if r.key&mask == n&mask {
 				return r
 			}
-			// A key, drag it along
-			return r.branch[k].find(n, bits, bit-1, r)
+			// See if it fits our key and mask
+			mask = uint32(mask32 << (bitSize32 - uint(r.bits)))
+			if r.key&mask == n&mask { // bits are the same, drag the key with us
+				// but only if the mask is larger
+				if last == nil || r.bits > last.bits {
+					//fmt.Printf("MORE %032b %d\n", r.key, r.Value)
+					return r.branch[k].find(n, bits, bit-1, r)
+				}
+			}
+			return r.branch[k].find(n, bits, bit-1, last)
+		}
+		if r.branch[k] == nil {
+			return last
 		}
 		return r.branch[k].find(n, bits, bit-1, last)
 	case true:
 		mask := uint32(mask32 << (bitSize32 - uint(r.bits)))
+//		fmt.Printf("mask %032b %d\n", mask, r.bits)
 		if r.key&mask == n&mask {
+			if last == nil || r.bits > last.bits {
+//			println("HIT")
 			return r
 		}
+		}
+//		fmt.Printf("%032b %d\n", n, r.Value)
 		return last
 	}
 	panic("bitradix: not reached")

@@ -25,24 +25,29 @@ func newTree32() *Radix32 {
 
 func TestInsert(t *testing.T) {
 	tests := map[uint32]uint32{
-		0x08: 2012,
-		0x04: 2010,
-		0x09: 2013,
+		0x80000000: 2012,
+		0x40000000: 2010,
+		0x90000000: 2013,
 	}
 	r := New32()
 	for key, value := range tests {
-		if x := r.Insert(key, 4, value); x.Value != value {
+		t.Logf("Inserting %032b\n", key)
+		if x := r.Insert(key, bits32, value); x.Value != value {
 			t.Logf("Expected %d, got %d for %d (node type %v)\n", value, x.Value, key, x.Leaf())
 			t.Fail()
 		}
+		t.Logf("Tree\n")
+		r.Do(func(r1 *Radix32, l, i int) { t.Logf("(%2d): %032b/%d -> %d\n", i, r1.key, r1.bits, r1.Value) })
 	}
 }
 
 func TestInsertIdempotent(t *testing.T) {
 	r := New32()
-	r.Insert(0x08, 4, 2012)
-	r.Insert(0x08, 4, 2013)
-	if x := r.Find(0x08, 4); x.Value != 2013 {
+	r.Insert(0x80000000, bits32, 2012)
+	r.Do(func(r1 *Radix32, l, i int) { t.Logf("(%2d): %032b/%d -> %d\n", i, r1.key, r1.bits, r1.Value) })
+	r.Insert(0x80000000, bits32, 2013)
+	r.Do(func(r1 *Radix32, l, i int) { t.Logf("(%2d): %032b/%d -> %d\n", i, r1.key, r1.bits, r1.Value) })
+	if x := r.Find(0x80000000, bits32); x.Value != 2013 {
 		t.Logf("Expected %d, got %d for %d\n", 2013, x.Value, 0x08)
 		t.Fail()
 	}
@@ -61,8 +66,14 @@ func TestFindExact(t *testing.T) {
 		r.Do(func(r1 *Radix32, l, i int) { t.Logf("(%2d): %032b/%d -> %d\n", i, r1.key, r1.bits, r1.Value) })
 	}
 	for k, v := range tests {
-		if x := r.Find(k, bits32); x.Value != v {
-			t.Logf("Expected %d, got %d for %d (node type %v)\n", v, x.Value, k, x.Leaf())
+		x := r.Find(k, bits32)
+		if x == nil {
+			t.Logf("Got nil for %032b\n", k)
+			t.Fail()
+			continue
+		}
+		if x.Value != v {
+			t.Logf("Expected %d, got %d for %032b (node type %v)\n", v, x.Value, k, x.Leaf())
 			t.Fail()
 		}
 	}
@@ -158,6 +169,9 @@ func TestFindIP(t *testing.T) {
 	addRoute(t, r, "8.0.0.0/9", 3356)
 	addRoute(t, r, "8.8.8.0/24", 15169)
 
+	r.Do(func(r1 *Radix32, l, i int) {
+		t.Logf("%s (%2d): %032b/%d -> %d\n", strings.Repeat(" ", l), i, r1.key, r1.bits, r1.Value)
+	})
 	testips := map[string]uint32{
 		"10.20.1.2/32":   20,
 		"10.22.1.2/32":   20,
@@ -181,17 +195,51 @@ func TestFindIP(t *testing.T) {
 func TestFindIPShort(t *testing.T) {
 	r := New32()
 	// not a map to have influence on the inserting order
+	// The /14 will overwrite the /10 ...
 	addRoute(t, r, "10.0.0.2/8", 10)
 	addRoute(t, r, "10.0.0.0/14", 11)
 	addRoute(t, r, "10.20.0.0/14", 20)
+	addRoute(t, r, "210.168.0.0/17", 4694)
+	addRoute(t, r, "210.168.96.0/19", 2554)
+	addRoute(t, r, "210.168.192.0/18", 2516)
+	addRoute(t, r, "210.169.0.0/17", 2516)
+	addRoute(t, r, "210.168.128.0/18", 4716)
+	addRoute(t, r, "210.169.128.0/17", 4725)
+	addRoute(t, r, "210.169.212.0/24", 4725)
+	addRoute(t, r, "210.16.14.0/24", 4759)
+	addRoute(t, r, "210.16.0.0/24", 4759)
+	addRoute(t, r, "210.16.1.0/24", 4759)
+	addRoute(t, r, "210.16.40.0/24", 4759)
+	addRoute(t, r, "210.166.0.0/19", 7672)
+	addRoute(t, r, "210.166.5.0/24", 7668)
+	addRoute(t, r, "210.167.0.0/19", 7668)
+	addRoute(t, r, "210.166.0.0/20", 7672)
+	addRoute(t, r, "210.166.96.0/19", 4693)
+	addRoute(t, r, "210.167.112.0/20", 4685)
+	addRoute(t, r, "210.167.128.0/18", 4716)
+	addRoute(t, r, "210.167.192.0/18", 4716)
+	addRoute(t, r, "210.167.32.0/19", 7663)
 
 	r.Do(func(r1 *Radix32, l, i int) { t.Logf("(%2d): %032b/%d -> %d\n", i, r1.key, r1.bits, r1.Value) })
 
 	testips := map[string]uint32{
-		"10.20.1.2/32": 20,
-		"10.19.0.1/32": 10,
-		"10.0.0.2/32":  11,
-		"10.1.0.1/32":  11,
+		"10.20.1.2/32":     20,
+		"10.19.0.1/32":     0, // because 10.0.0.2/8 isn't there this return 0
+		"10.0.0.2/32":      11,
+		"10.1.0.1/32":      11,
+		"210.169.0.0/17":   2516,
+		"210.168.96.0/19":  2554,
+		"210.16.14.0/24":   4759,
+		"210.16.0.0/24":    4759,
+		"210.16.1.0/24":    4759,
+		"210.16.40.0/24":   4759,
+		"210.166.0.0/19":   7672,
+		"210.166.0.0/20":   7672,
+		"210.166.96.0/19":  4693,
+		"210.167.112.0/20": 4685,
+		"210.167.128.0/18": 4716,
+		"210.167.192.0/18": 4716,
+		"210.167.32.0/19":  7663,
 	}
 
 	for ip, asn := range testips {
@@ -214,7 +262,9 @@ func TestFindOverwrite(t *testing.T) {
 	for ip, asn := range routes {
 		addRoute(t, r, ip, asn)
 	}
-	r.Do(func(r1 *Radix32, l, i int) { t.Logf("(%2d): %032b/%d -> %d\n", i, r1.key, r1.bits, r1.Value) })
+	r.Do(func(r1 *Radix32, l, i int) {
+		t.Logf("(%2d): %032b/%d %s -> %d\n", i, r1.key, r1.bits, uintToIP(r1.key), r1.Value)
+	})
 
 	for ip, asn := range routes {
 		x := findRoute(t, r, ip)
