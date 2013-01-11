@@ -94,13 +94,16 @@ func (r *Radix32) Do(f func(*Radix32, int, int)) {
 func (r *Radix32) insert(n uint32, bits int, v interface{}, bit int) *Radix32 {
 	switch r.Leaf() {
 	case false:
+		/*
 		if bitSize32-bits == bit { // we need to store a value here
+			println("STORING", bitSize32, bits, bit)
 			// TODO(mg): check previous value? And then what?
 			r.key = n
 			r.bits = bits
 			r.Value = v
 			return r
 		}
+		*/
 		// Non-leaf node, no key, one or two branches
 		k := bitK32(n, bit)
 		if r.branch[k] == nil {
@@ -116,6 +119,7 @@ func (r *Radix32) insert(n uint32, bits int, v interface{}, bit int) *Radix32 {
 			r.Value = v
 			return r
 		}
+		/*
 		if bitSize32-bits == bit { // seen all bits, put something here
 			if r.bits != 0 {
 				// TODO(mg): prev value. What to do
@@ -125,6 +129,7 @@ func (r *Radix32) insert(n uint32, bits int, v interface{}, bit int) *Radix32 {
 			r.Value = v
 			return r
 		}
+		*/
 
 		bcur := bitK32(r.key, bit)
 		bnew := bitK32(n, bit)

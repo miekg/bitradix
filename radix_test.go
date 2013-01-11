@@ -202,6 +202,33 @@ func TestFindIPShort(t *testing.T) {
 	}
 }
 
+func TestFindOverwrite(t *testing.T) {
+	r := New32()
+	routes := map[string]uint32{
+		"1.0.20.0/23": 2518,
+		"1.0.22.0/23": 2519,
+		"1.0.24.0/23": 2520,
+		"1.0.28.0/22": 2517,
+		"1.0.64.0/18": 18144,
+	}
+	for ip, asn := range routes {
+		addRoute(t, r, ip, asn)
+	}
+	r.Do(func(r1 *Radix32, l, i int) { t.Logf("(%2d): %032b/%d -> %d\n", i, r1.key, r1.bits, r1.Value) })
+
+	for ip, asn := range routes {
+		x := findRoute(t, r, ip)
+		if x == nil {
+			t.Logf("Expected %d, got nil\n", asn)
+			t.Fail()
+		}
+		if x != asn {
+			t.Logf("Expected %d, got %d\n", asn, x)
+			t.Fail()
+		}
+	}
+}
+
 type bittest struct {
 	value uint32
 	bit   int
