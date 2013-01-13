@@ -44,8 +44,10 @@ func TestInsert(t *testing.T) {
 func TestInsertIdempotent(t *testing.T) {
 	r := New32()
 	r.Insert(0x80000000, bits32, 2012)
+	t.Logf("Tree\n")
 	r.Do(func(r1 *Radix32, l, i int) { t.Logf("(%2d): %032b/%d -> %d\n", i, r1.key, r1.bits, r1.Value) })
 	r.Insert(0x80000000, bits32, 2013)
+	t.Logf("Tree\n")
 	r.Do(func(r1 *Radix32, l, i int) { t.Logf("(%2d): %032b/%d -> %d\n", i, r1.key, r1.bits, r1.Value) })
 	if x := r.Find(0x80000000, bits32); x.Value != 2013 {
 		t.Logf("Expected %d, got %d for %d\n", 2013, x.Value, 0x08)
@@ -63,7 +65,7 @@ func TestFindExact(t *testing.T) {
 	for k, v := range tests {
 		t.Logf("Tree after insert of %032b (%x %d)\n", k, k, k)
 		r.Insert(k, bits32, v)
-		r.Do(func(r1 *Radix32, l, i int) { t.Logf("(%2d): %032b/%d -> %d\n", i, r1.key, r1.bits, r1.Value) })
+		r.Do(func(r1 *Radix32, l, i int) { t.Logf("%p (%2d): %032b/%d -> %d\n", r1, i, r1.key, r1.bits, r1.Value) })
 	}
 	for k, v := range tests {
 		x := r.Find(k, bits32)
