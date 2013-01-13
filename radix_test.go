@@ -246,6 +246,8 @@ func TestFindIPShort(t *testing.T) {
 	addRoute(t, r, "210.167.128.0/18", 4716)
 	addRoute(t, r, "210.167.192.0/18", 4716)
 	addRoute(t, r, "210.167.32.0/19", 7663)
+	addRoute(t, r, "210.166.209.0/24", 7663)
+	addRoute(t, r, "210.166.211.0/24", 7663)
 
 	r.Do(func(r1 *Radix32, l, i int) { t.Logf("(%2d): %032b/%d -> %d\n", i, r1.key, r1.bits, r1.Value) })
 
@@ -270,6 +272,43 @@ func TestFindIPShort(t *testing.T) {
 	}
 
 	for ip, asn := range testips {
+		if x := findRoute(t, r, ip); asn != x {
+			t.Logf("Expected %d, got %d for %s\n", asn, x, ip)
+			t.Fail()
+		}
+	}
+}
+
+func TestFindMySelf(t *testing.T) {
+	r := New32()
+	routes := map[string]uint32{
+		"210.168.0.0/17":   4694,
+		"210.168.96.0/19":  2554,
+		"210.168.192.0/18": 2516,
+		"210.169.0.0/17":   2516,
+		"210.168.128.0/18": 4716,
+		"210.169.128.0/17": 4725,
+		"210.169.212.0/24": 4725,
+		"210.16.14.0/24":   4759,
+		"210.16.0.0/24":    4759,
+		"210.16.1.0/24":    4759,
+		"210.16.40.0/24":   4759,
+		"210.166.0.0/19":   7672,
+		"210.166.5.0/24":   7668,
+		"210.167.0.0/19":   7668,
+		"210.166.0.0/20":   7672,
+		"210.166.96.0/19":  4693,
+		"210.167.112.0/20": 4685,
+		"210.167.128.0/18": 4716,
+		"210.167.192.0/18": 4716,
+		"210.167.32.0/19":  7663,
+		"210.166.209.0/24": 7663,
+		"210.166.211.0/24": 7663,
+	}
+	for ip, asn := range routes {
+		addRoute(t, r, ip, asn)
+	}
+	for ip, asn := range routes {
 		if x := findRoute(t, r, ip); asn != x {
 			t.Logf("Expected %d, got %d for %s\n", asn, x, ip)
 			t.Fail()

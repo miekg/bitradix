@@ -112,12 +112,17 @@ func (r *Radix32) insert(n uint32, bits int, v interface{}, bit int) *Radix32 {
 		if r.bits > 0 && bits == bitSize32-bit {
 			// I should be put here, but something is already here
 			// swap. What if we can't swap? Overwrite??
+				println("SWAP")
 			b1 := r.bits
 			n1 := r.key
 			v1 := r.Value
 			r.bits = bits
 			r.key = n
 			r.Value = v
+			if r.branch[bnew] == nil {
+				r.branch[bnew] = &Radix32{[2]*Radix32{nil, nil}, nil, 0, 0, nil}
+				r.branch[bnew].parent = r
+			}
 			r.branch[bnew].insert(n1, b1, v1, bit-1)
 			return r
 		}
@@ -272,7 +277,7 @@ func (r *Radix32) find(n uint32, bits, bit int, last *Radix32) *Radix32 {
 		// A prefix that is matching
 		mask := uint32(mask32 << (bitSize32 - uint(r.bits)))
 		if r.bits > 0 && r.key&mask == n&mask {
-//			fmt.Printf("Setting last to %d %s\n", r.key, r.Value)
+			//			fmt.Printf("Setting last to %d %s\n", r.key, r.Value)
 			last = r
 		}
 		if r.bits == bits && r.key&mask == n&mask {
@@ -282,8 +287,8 @@ func (r *Radix32) find(n uint32, bits, bit int, last *Radix32) *Radix32 {
 
 		k := bitK32(n, bit)
 		if r.branch[k] == nil {
-//			fmt.Printf("%p %p %p\n", r, r.branch[0], r.branch[1])
-//			println("bit", bit, "k", k)
+			//			fmt.Printf("%p %p %p\n", r, r.branch[0], r.branch[1])
+			//			println("bit", bit, "k", k)
 			return nil
 		}
 		return r.branch[k].find(n, bits, bit-1, last)
@@ -294,11 +299,11 @@ func (r *Radix32) find(n uint32, bits, bit int, last *Radix32) *Radix32 {
 			return r
 		}
 		/*
-		fmt.Printf("WANT TO RETURN A VALUE %d\n", r.Value)
-		fmt.Printf("mask %032b\n", mask)
-		fmt.Printf("key %032b\n", r.key)
-		fmt.Printf("n %032b\n", n)
-		fmt.Printf("bit %d\n", bit)
+			fmt.Printf("WANT TO RETURN A VALUE %d\n", r.Value)
+			fmt.Printf("mask %032b\n", mask)
+			fmt.Printf("key %032b\n", r.key)
+			fmt.Printf("n %032b\n", n)
+			fmt.Printf("bit %d\n", bit)
 		*/
 		return last
 	}
