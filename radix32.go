@@ -10,6 +10,11 @@
 // http://faculty.simpson.edu/lydia.sinapova/www/cmsc250/LN250_Weiss/L08-Radix.htm
 package bitradix
 
+import (
+	"fmt"
+	"net"
+)
+
 const (
 	bitSize32 = 32
 	bitSize64 = 64
@@ -98,8 +103,15 @@ func (r *Radix32) Do(f func(*Radix32, int, int)) {
 
 // Implement insert
 func (r *Radix32) insert(n uint32, bits int, v interface{}, bit int) *Radix32 {
+	if bit < 0 {
+		fmt.Printf("%s/%d", uintToIP2(n), bits)
+		panic("NOT GOOD")
+	}
 	switch r.Leaf() {
 	case false:
+		if bit == 0 {
+			println("non-leaf: BIT IS ZERO")
+		}
 		// Non-leaf node, one or two branches, possibly a key
 		bnew := bitK32(n, bit)
 		if r.bits == 0 && bits == bitSize32-bit-1 {
@@ -114,7 +126,7 @@ func (r *Radix32) insert(n uint32, bits int, v interface{}, bit int) *Radix32 {
 			// swap. What if we can't swap? Overwrite??
 			//			bcur := bitK32(r.key, bit)
 			if r.bits == bits {
-//				fmt.Printf("%d) EN NU? %s/%d %s/%d\n", bit, uintToIP(r.key), r.bits, uintToIP(n), bits)
+				//				fmt.Printf("%d) EN NU? %s/%d %s/%d\n", bit, uintToIP(r.key), r.bits, uintToIP(n), bits)
 			}
 			//				println("SWAP", bnew, bcur)
 			b1 := r.bits
@@ -130,6 +142,9 @@ func (r *Radix32) insert(n uint32, bits int, v interface{}, bit int) *Radix32 {
 				r.branch[bnew] = &Radix32{[2]*Radix32{nil, nil}, nil, 0, 0, nil}
 				r.branch[bnew].parent = r
 			}
+			if bit == 0 {
+				println("1 BIT is 0")
+			}
 			r.branch[bnew].insert(n1, b1, v1, bit-1)
 			return r
 		}
@@ -137,8 +152,14 @@ func (r *Radix32) insert(n uint32, bits int, v interface{}, bit int) *Radix32 {
 			r.branch[bnew] = &Radix32{[2]*Radix32{nil, nil}, nil, 0, 0, nil}
 			r.branch[bnew].parent = r
 		}
+		if bit == 0 {
+			println("2 BIT is 0")
+		}
 		return r.branch[bnew].insert(n, bits, v, bit-1)
 	case true:
+		if bit == 0 {
+			println("    leaf: BIT IS ZERO")
+		}
 		// External node, (optional) key, no branches
 		if r.bits == 0 || r.key == n { // nothing here yet, put something in, or equal keys
 			r.bits = bits
@@ -151,28 +172,47 @@ func (r *Radix32) insert(n uint32, bits int, v interface{}, bit int) *Radix32 {
 		if bcur == bnew {
 			r.branch[bcur] = &Radix32{[2]*Radix32{nil, nil}, nil, 0, 0, nil}
 			r.branch[bcur].parent = r
-			// TODO(mg): What about <
 			if r.bits > 0 && bits == bitSize32-bit-1 {
 				// I should be put here, but something is already here
 				// swap. What if we can't swap? Overwrite??
-//				ip1 := uintToIP(r.key)
-//				ip := uintToIP(n)
-//				fmt.Printf("%d here %s new: %s\n", bit, ip1, ip)
-//				println("SWAP")
+				//				ip1 := uintToIP(r.key)
+				//				ip := uintToIP(n)
+				//				fmt.Printf("%d here %s new: %s\n", bit, ip1, ip)
+				//				println("SWAP")
 				b1 := r.bits
 				n1 := r.key
 				v1 := r.Value
 				r.bits = bits
 				r.key = n
 				r.Value = v
+				if bit == 0 {
+					println("3 BIT is 0")
+				}
 				r.branch[bnew].insert(n1, b1, v1, bit-1)
 				return r
 			}
-
+			// TODO(mg): What about <
 			if r.bits > 0 && bits >= r.bits {
 				// current key can not be put further down, leave it
 				// but continue
+				if bit == 0 {
+					println("4 BIT is 0")
+				}
 				return r.branch[bnew].insert(n, bits, v, bit-1)
+			}
+			if r.bits > 0 && bits < r.bits {
+				b1 := r.bits
+				n1 := r.key
+				v1 := r.Value
+				r.bits = bits
+				r.key = n
+				r.Value = v
+				if bit == 0 {
+					println("7 BIT is 0")
+				}
+				r.branch[bnew].insert(n1, b1, v1, bit-1)
+				return r
+				// I must be put here, and this one put down
 			}
 			// fill this node, with the current key - and call ourselves
 			r.branch[bcur].key = r.key
@@ -181,6 +221,12 @@ func (r *Radix32) insert(n uint32, bits int, v interface{}, bit int) *Radix32 {
 			r.bits = 0
 			r.key = 0
 			r.Value = nil
+			if bit == 0 {
+				fmt.Printf("inserting %s/%d %032b\n", uintToIP2(n), bits, n)
+				fmt.Printf("finding   %s/%d %032b\n", uintToIP2(r.branch[bcur].key), r.branch[bcur].bits, r.branch[bcur].key)
+				return r	// WRONG BUT OK
+				println("5 BIT is 0")
+			}
 			return r.branch[bnew].insert(n, bits, v, bit-1)
 		}
 		// TODO(mg): refactor
@@ -197,6 +243,9 @@ func (r *Radix32) insert(n uint32, bits int, v interface{}, bit int) *Radix32 {
 		r.Value = nil
 		r.branch[bnew] = &Radix32{[2]*Radix32{nil, nil}, nil, 0, 0, nil}
 		r.branch[bnew].parent = r
+		if bit == 0 {
+			println("6 BIT is 0")
+		}
 		return r.branch[bnew].insert(n, bits, v, bit-1)
 	}
 	panic("bitradix: not reached")
@@ -329,6 +378,6 @@ func bitK32(n uint32, k int) byte {
 	return byte((n & (1 << uint(k))) >> uint(k))
 }
 
-//func uintToIP(n uint32) net.IP {
-//	return net.IPv4(byte(n>>24), byte(n>>16), byte(n>>8), byte(n))
-//}
+func uintToIP2(n uint32) net.IP {
+	return net.IPv4(byte(n>>24), byte(n>>16), byte(n>>8), byte(n))
+}
