@@ -10,10 +10,6 @@
 // http://faculty.simpson.edu/lydia.sinapova/www/cmsc250/LN250_Weiss/L08-Radix.htm
 package bitradix
 
-import (
-	"fmt"
-)
-
 const (
 	bitSize32 = 32
 	bitSize64 = 64
@@ -75,7 +71,7 @@ func (r *Radix32) Remove(n uint32, bits int) *Radix32 {
 // Find searches the tree for the key n, where the first bits bits of n 
 // are significant. It returns the node found.
 func (r *Radix32) Find(n uint32, bits int) *Radix32 {
-	return r.find(n, bits, bitSize32-1)
+	return r.find(n, bits, bitSize32-1, nil)
 }
 
 // Do traverses the tree r in breadth-first order. For each visited node,
@@ -104,13 +100,32 @@ func (r *Radix32) Do(f func(*Radix32, int, int)) {
 func (r *Radix32) insert(n uint32, bits int, v interface{}, bit int) *Radix32 {
 	switch r.Leaf() {
 	case false:
-		// Non-leaf node, no key, one or two branches
-		k := bitK32(n, bit)
-		if r.branch[k] == nil {
-			r.branch[k] = &Radix32{[2]*Radix32{nil, nil}, nil, 0, 0, nil}
-			r.branch[k].parent = r
+		// Non-leaf node, one or two branches, possibly a key
+		bnew := bitK32(n, bit)
+		if r.bits == 0 && bits == bitSize32-bit {
+			// I should be put here
+			r.bits = bits
+			r.key = n
+			r.Value = v
+			return r
 		}
-		return r.branch[k].insert(n, bits, v, bit-1)
+		if r.bits > 0 && bits == bitSize32-bit {
+			// I should be put here, but something is already here
+			// swap. What if we can't swap? Overwrite??
+			b1 := r.bits
+			n1 := r.key
+			v1 := r.Value
+			r.bits = bits
+			r.key = n
+			r.Value = v
+			r.branch[bnew].insert(n1, b1, v1, bit-1)
+			return r
+		}
+		if r.branch[bnew] == nil {
+			r.branch[bnew] = &Radix32{[2]*Radix32{nil, nil}, nil, 0, 0, nil}
+			r.branch[bnew].parent = r
+		}
+		return r.branch[bnew].insert(n, bits, v, bit-1)
 	case true:
 		// External node, (optional) key, no branches
 		if r.bits == 0 || r.key == n { // nothing here yet, put something in, or equal keys
@@ -124,6 +139,25 @@ func (r *Radix32) insert(n uint32, bits int, v interface{}, bit int) *Radix32 {
 		if bcur == bnew {
 			r.branch[bcur] = &Radix32{[2]*Radix32{nil, nil}, nil, 0, 0, nil}
 			r.branch[bcur].parent = r
+			// TODO(mg): What about <
+			if r.bits > 0 && bits == bitSize32-bit {
+				// I should be put here, but something is already here
+				// swap. What if we can't swap? Overwrite??
+				b1 := r.bits
+				n1 := r.key
+				v1 := r.Value
+				r.bits = bits
+				r.key = n
+				r.Value = v
+				r.branch[bnew].insert(n1, b1, v1, bit-1)
+				return r
+			}
+
+			if r.bits > 0 && bits >= r.bits {
+				// current key can not be put further down, leave it
+				// but continue
+				return r.branch[bnew].insert(n, bits, v, bit-1)
+			}
 			// fill this node, with the current key - and call ourselves
 			r.branch[bcur].key = r.key
 			r.branch[bcur].Value = r.Value
@@ -133,17 +167,18 @@ func (r *Radix32) insert(n uint32, bits int, v interface{}, bit int) *Radix32 {
 			r.Value = nil
 			return r.branch[bnew].insert(n, bits, v, bit-1)
 		}
+		// TODO(mg): refactor
 		// not equal
 		// keep current node, and branch off in child
-			r.branch[bcur] = &Radix32{[2]*Radix32{nil, nil}, nil, 0, 0, nil}
-			r.branch[bcur].parent = r
-			// fill this node, with the current key - and call ourselves
-			r.branch[bcur].key = r.key
-			r.branch[bcur].Value = r.Value
-			r.branch[bcur].bits = r.bits
-			r.bits = 0
-			r.key = 0
-			r.Value = nil
+		r.branch[bcur] = &Radix32{[2]*Radix32{nil, nil}, nil, 0, 0, nil}
+		r.branch[bcur].parent = r
+		// fill this node, with the current key - and call ourselves
+		r.branch[bcur].key = r.key
+		r.branch[bcur].Value = r.Value
+		r.branch[bcur].bits = r.bits
+		r.bits = 0
+		r.key = 0
+		r.Value = nil
 		r.branch[bnew] = &Radix32{[2]*Radix32{nil, nil}, nil, 0, 0, nil}
 		r.branch[bnew].parent = r
 		return r.branch[bnew].insert(n, bits, v, bit-1)
@@ -231,29 +266,41 @@ func (r *Radix32) prune(b bool) {
 	r.parent.prune(false)
 }
 
-func (r *Radix32) find(n uint32, bits, bit int) *Radix32 {
+func (r *Radix32) find(n uint32, bits, bit int, last *Radix32) *Radix32 {
 	switch r.Leaf() {
 	case false:
-		// cannot hold a key
+		// A prefix that is matching
+		mask := uint32(mask32 << (bitSize32 - uint(r.bits)))
+		if r.bits > 0 && r.key&mask == n&mask {
+//			fmt.Printf("Setting last to %d %s\n", r.key, r.Value)
+			last = r
+		}
+		if r.bits == bits && r.key&mask == n&mask {
+			// our key
+			return r
+		}
 
 		k := bitK32(n, bit)
 		if r.branch[k] == nil {
-		fmt.Printf("%p %p %p\n", r, r.branch[0], r.branch[1])
-			println("bit", bit, "k", k)
+//			fmt.Printf("%p %p %p\n", r, r.branch[0], r.branch[1])
+//			println("bit", bit, "k", k)
 			return nil
 		}
-		return r.branch[k].find(n, bits, bit-1)
+		return r.branch[k].find(n, bits, bit-1, last)
 	case true:
 		// It this our key...!?
 		mask := uint32(mask32 << (bitSize32 - uint(r.bits)))
 		if r.key&mask == n&mask {
 			return r
 		}
+		/*
 		fmt.Printf("WANT TO RETURN A VALUE %d\n", r.Value)
 		fmt.Printf("mask %032b\n", mask)
 		fmt.Printf("key %032b\n", r.key)
 		fmt.Printf("n %032b\n", n)
-		return nil
+		fmt.Printf("bit %d\n", bit)
+		*/
+		return last
 	}
 	panic("bitradix: not reached")
 }

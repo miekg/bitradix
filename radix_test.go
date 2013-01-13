@@ -7,6 +7,11 @@ import (
 	"testing"
 )
 
+type bittest struct {
+	key uint32
+	bit int
+}
+
 var tests = map[uint32]uint32{
 	0x80000000: 2012,
 	0x40000000: 2010,
@@ -24,16 +29,33 @@ func newTree32() *Radix32 {
 }
 
 func TestInsert(t *testing.T) {
-	tests := map[uint32]uint32{
-		0x80000000: 2012,
-		0x40000000: 2010,
-		0x90000000: 2013,
+	tests := map[bittest]uint32{
+		bittest{0x81000000, 9}: 2012,
+		bittest{0x80000000, 2}: 2013,
 	}
 	r := New32()
-	for key, value := range tests {
-		t.Logf("Inserting %032b\n", key)
-		if x := r.Insert(key, bits32, value); x.Value != value {
-			t.Logf("Expected %d, got %d for %d (node type %v)\n", value, x.Value, key, x.Leaf())
+	for bits, value := range tests {
+		t.Logf("Inserting %032b/%d\n", bits.key, bits.bit)
+		if x := r.Insert(bits.key, bits.bit, value); x.Value != value {
+			t.Logf("Expected %d, got %d for %d (node type %v)\n", value, x.Value, bits.key, x.Leaf())
+			t.Fail()
+		}
+		t.Logf("Tree\n")
+		r.Do(func(r1 *Radix32, l, i int) { t.Logf("(%2d): %032b/%d -> %d\n", i, r1.key, r1.bits, r1.Value) })
+	}
+}
+
+func TestInsert2(t *testing.T) {
+	tests := map[bittest]uint32{
+		bittest{0x81000000, 9}: 2012,
+		bittest{0xA0000000, 4}: 1000,
+		bittest{0x80000000, 2}: 2013,
+	}
+	r := New32()
+	for bits, value := range tests {
+		t.Logf("Inserting %032b/%d\n", bits.key, bits.bit)
+		if x := r.Insert(bits.key, bits.bit, value); x.Value != value {
+			t.Logf("Expected %d, got %d for %d (node type %v)\n", value, x.Value, bits.key, x.Leaf())
 			t.Fail()
 		}
 		t.Logf("Tree\n")
@@ -172,7 +194,7 @@ func TestFindIP(t *testing.T) {
 	addRoute(t, r, "8.8.8.0/24", 15169)
 
 	r.Do(func(r1 *Radix32, l, i int) {
-		t.Logf("%s (%2d): %032b/%d -> %d\n", strings.Repeat(" ", l), i, r1.key, r1.bits, r1.Value)
+		t.Logf("(%2d): %032b/%d -> %d\n", i, r1.key, r1.bits, r1.Value)
 	})
 	testips := map[string]uint32{
 		"10.20.1.2/32":   20,
@@ -188,6 +210,9 @@ func TestFindIP(t *testing.T) {
 
 	for ip, asn := range testips {
 		if x := findRoute(t, r, ip); asn != x {
+			if x == nil && asn == 0 {
+				continue
+			}
 			t.Logf("Expected %d, got %d for %ss\n", asn, x, ip)
 			t.Fail()
 		}
@@ -281,19 +306,14 @@ func TestFindOverwrite(t *testing.T) {
 	}
 }
 
-type bittest struct {
-	value uint32
-	bit   int
-}
-
 func TestBitK32(t *testing.T) {
 	tests := map[bittest]byte{
 		bittest{0x40, 0}: 0,
 		bittest{0x40, 6}: 1,
 	}
 	for test, expected := range tests {
-		if x := bitK32(test.value, test.bit); x != expected {
-			t.Logf("Expected %d for %032b (bit #%d), got %d\n", expected, test.value, test.bit, x)
+		if x := bitK32(test.key, test.bit); x != expected {
+			t.Logf("Expected %d for %032b (bit #%d), got %d\n", expected, test.key, test.bit, x)
 			t.Fail()
 		}
 	}
