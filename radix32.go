@@ -10,10 +10,6 @@
 // http://faculty.simpson.edu/lydia.sinapova/www/cmsc250/LN250_Weiss/L08-Radix.htm
 package bitradix
 
-import (
-	"fmt"
-)
-
 const (
 	bitSize32 = 32
 	bitSize64 = 64
@@ -118,7 +114,7 @@ func (r *Radix32) insert(n uint32, bits int, v interface{}, bit int) *Radix32 {
 			// swap. What if we can't swap? Overwrite??
 			//			bcur := bitK32(r.key, bit)
 			if r.bits == bits {
-				fmt.Printf("%d) EN NU? %s/%d %s/%d\n", bit, uintToIP(r.key), r.bits, uintToIP(n), bits)
+//				fmt.Printf("%d) EN NU? %s/%d %s/%d\n", bit, uintToIP(r.key), r.bits, uintToIP(n), bits)
 			}
 			//				println("SWAP", bnew, bcur)
 			b1 := r.bits
@@ -159,10 +155,10 @@ func (r *Radix32) insert(n uint32, bits int, v interface{}, bit int) *Radix32 {
 			if r.bits > 0 && bits == bitSize32-bit-1 {
 				// I should be put here, but something is already here
 				// swap. What if we can't swap? Overwrite??
-				ip1 := uintToIP(r.key)
-				ip := uintToIP(n)
-				fmt.Printf("%d here %s new: %s\n", bit, ip1, ip)
-				println("SWAP")
+//				ip1 := uintToIP(r.key)
+//				ip := uintToIP(n)
+//				fmt.Printf("%d here %s new: %s\n", bit, ip1, ip)
+//				println("SWAP")
 				b1 := r.bits
 				n1 := r.key
 				v1 := r.Value
