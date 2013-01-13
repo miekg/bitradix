@@ -201,6 +201,7 @@ func (r *Radix32) insert(n uint32, bits int, v interface{}, bit int) *Radix32 {
 				return r.branch[bnew].insert(n, bits, v, bit-1)
 			}
 			if r.bits > 0 && bits < r.bits {
+				// leave us here, and put the other one down
 				b1 := r.bits
 				n1 := r.key
 				v1 := r.Value
