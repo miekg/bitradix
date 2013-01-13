@@ -308,11 +308,18 @@ func TestFindMySelf(t *testing.T) {
 	for ip, asn := range routes {
 		addRoute(t, r, ip, asn)
 	}
+	fail := false
 	for ip, asn := range routes {
 		if x := findRoute(t, r, ip); asn != x {
 			t.Logf("Expected %d, got %d for %s\n", asn, x, ip)
+			fail = true
 			t.Fail()
 		}
+	}
+	if fail {
+		r.Do(func(r1 *Radix32, l, i int) {
+			t.Logf("(%2d): %032b/%d %s -> %d\n", i, r1.key, r1.bits, uintToIP(r1.key), r1.Value)
+		})
 	}
 }
 

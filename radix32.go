@@ -10,6 +10,10 @@
 // http://faculty.simpson.edu/lydia.sinapova/www/cmsc250/LN250_Weiss/L08-Radix.htm
 package bitradix
 
+import (
+	"fmt"
+)
+
 const (
 	bitSize32 = 32
 	bitSize64 = 64
@@ -102,20 +106,27 @@ func (r *Radix32) insert(n uint32, bits int, v interface{}, bit int) *Radix32 {
 	case false:
 		// Non-leaf node, one or two branches, possibly a key
 		bnew := bitK32(n, bit)
-		if r.bits == 0 && bits == bitSize32-bit {
+		if r.bits == 0 && bits == bitSize32-bit-1 {
 			// I should be put here
 			r.bits = bits
 			r.key = n
 			r.Value = v
 			return r
 		}
-		if r.bits > 0 && bits == bitSize32-bit {
+		if r.bits > 0 && bits == bitSize32-bit-1 {
 			// I should be put here, but something is already here
 			// swap. What if we can't swap? Overwrite??
-				println("SWAP")
+			//			bcur := bitK32(r.key, bit)
+			if r.bits == bits {
+				fmt.Printf("%d) EN NU? %s/%d %s/%d\n", bit, uintToIP(r.key), r.bits, uintToIP(n), bits)
+			}
+			//				println("SWAP", bnew, bcur)
 			b1 := r.bits
 			n1 := r.key
 			v1 := r.Value
+			//			ip1 := uintToIP(r.key)
+			//			ip := uintToIP(n)
+			//			fmt.Printf("%d here %s new: %s r.bits, bits %d %d\n", bit, ip1, ip, r.bits, bits)
 			r.bits = bits
 			r.key = n
 			r.Value = v
@@ -145,9 +156,13 @@ func (r *Radix32) insert(n uint32, bits int, v interface{}, bit int) *Radix32 {
 			r.branch[bcur] = &Radix32{[2]*Radix32{nil, nil}, nil, 0, 0, nil}
 			r.branch[bcur].parent = r
 			// TODO(mg): What about <
-			if r.bits > 0 && bits == bitSize32-bit {
+			if r.bits > 0 && bits == bitSize32-bit-1 {
 				// I should be put here, but something is already here
 				// swap. What if we can't swap? Overwrite??
+				ip1 := uintToIP(r.key)
+				ip := uintToIP(n)
+				fmt.Printf("%d here %s new: %s\n", bit, ip1, ip)
+				println("SWAP")
 				b1 := r.bits
 				n1 := r.key
 				v1 := r.Value
@@ -317,3 +332,7 @@ func (r *Radix32) find(n uint32, bits, bit int, last *Radix32) *Radix32 {
 func bitK32(n uint32, k int) byte {
 	return byte((n & (1 << uint(k))) >> uint(k))
 }
+
+//func uintToIP(n uint32) net.IP {
+//	return net.IPv4(byte(n>>24), byte(n>>16), byte(n>>8), byte(n))
+//}
