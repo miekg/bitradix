@@ -143,14 +143,14 @@ func (r *Radix32) insert(n uint32, bits int, v interface{}, bit int) *Radix32 {
 			r.bits = bits
 			r.key = n
 			r.Value = v
-			if r.branch[bnew] == nil {
+			if r.branch[bcur] == nil {
 				r.branch[bnew] = &Radix32{[2]*Radix32{nil, nil}, nil, 0, 0, nil}
-				r.branch[bnew].parent = r
+				r.branch[bcur].parent = r
 			}
 			if bit == 0 {
 				println("1 BIT is 0")
 			}
-			r.branch[bnew].insert(n1, b1, v1, bit-1)
+			r.branch[bcur].insert(n1, b1, v1, bit-1)
 			return r
 		}
 		if r.branch[bnew] == nil {
