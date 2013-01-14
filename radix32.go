@@ -285,10 +285,6 @@ func (r *Radix32) prune(b bool) {
 }
 
 func (r *Radix32) find(n uint32, bits, bit int, last *Radix32) *Radix32 {
-	//	fmt.Printf("   path %s/%d\n", uintToIP2(r.key), r.bits)
-	//	if last != nil {
-	//	fmt.Printf("   last %s/%d\n", uintToIP2(last.key), last.bits)
-	//	}
 	switch r.Leaf() {
 	case false:
 		// A prefix that is matching (BETTER MATCHING)
@@ -311,8 +307,6 @@ func (r *Radix32) find(n uint32, bits, bit int, last *Radix32) *Radix32 {
 
 		k := bitK32(n, bit)
 		if r.branch[k] == nil {
-			//			fmt.Printf("%p %p %p\n", r, r.branch[0], r.branch[1])
-			//			println("bit", bit, "k", k)
 			return last // REALLY?
 		}
 		return r.branch[k].find(n, bits, bit-1, last)
@@ -322,13 +316,6 @@ func (r *Radix32) find(n uint32, bits, bit int, last *Radix32) *Radix32 {
 		if r.key&mask == n&mask {
 			return r
 		}
-		/*
-			fmt.Printf("WANT TO RETURN A VALUE %d\n", r.Value)
-			fmt.Printf("mask %032b\n", mask)
-			fmt.Printf("key %032b\n", r.key)
-			fmt.Printf("n %032b\n", n)
-			fmt.Printf("bit %d\n", bit)
-		*/
 		return last
 	}
 	panic("bitradix: not reached")
