@@ -182,6 +182,7 @@ func (r *Radix32) remove(n uint32, bits, bit int) *Radix32 {
 }
 
 // Prune the tree, when b is true the current node is deleted.
+// TODO(mg): needs to be fixed
 func (r *Radix32) prune(b bool) {
 	if b {
 		if r.parent == nil {
