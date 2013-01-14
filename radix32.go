@@ -126,9 +126,9 @@ func (r *Radix32) insert(n uint32, bits int, v interface{}, bit int) *Radix32 {
 			// swap. What if we can't swap? Overwrite??
 			//			bcur := bitK32(r.key, bit)
 			if r.bits == bits {
-				//				fmt.Printf("%d) EN NU? %s/%d %s/%d\n", bit, uintToIP(r.key), r.bits, uintToIP(n), bits)
+				fmt.Printf("%d) EN NU? %s/%d %s/%d\n", bit, uintToIP2(r.key), r.bits, uintToIP2(n), bits)
 			}
-			//				println("SWAP", bnew, bcur)
+				println("SWAP", bnew)
 			b1 := r.bits
 			n1 := r.key
 			v1 := r.Value
