@@ -115,15 +115,7 @@ func (r *Radix32) insert(n uint32, bits int, v interface{}, bit int) *Radix32 {
 		}
 		if r.bits > 0 && bits == bitSize32-bit {
 			bcur := bitK32(r.key, bit)
-			// I should be put here, but something is already here
-			// swap. What if we can't swap? Overwrite??
-			//			bcur := bitK32(r.key, bit)
-			//			if r.bits == bits {
-			//				fmt.Printf("%d [%d:%d]) EN NU? %s/%d %s/%d\n", bitSize32-bit, bcur, bnew, uintToIP2(r.key), r.bits, uintToIP2(n), bits)
-			//				fmt.Printf("%032b/%d %032b/%d\n", r.key, r.bits, n, bits)
-			//			}
 			if r.bits > bits {
-				//				println("SWAP", bnew)
 				b1 := r.bits
 				n1 := r.key
 				v1 := r.Value
@@ -157,14 +149,6 @@ func (r *Radix32) insert(n uint32, bits int, v interface{}, bit int) *Radix32 {
 			r.branch[bcur] = &Radix32{[2]*Radix32{nil, nil}, nil, 0, 0, nil}
 			r.branch[bcur].parent = r
 			if r.bits > 0 && bits == bitSize32-bit {
-				// I should be put here, but something is already here
-				// swap. What if we can't swap? Overwrite??
-				//				ip1 := uintToIP(r.key)
-				//				ip := uintToIP(n)
-				//				fmt.Printf("%d here %s new: %s\n", bit, ip1, ip)
-				//				println("SWAPPIE")
-				// fmt.Printf("%d [%d:%d]) EN NU? %s/%d %s/%d\n", bitSize32-bit, bcur, bnew, uintToIP2(r.key), r.bits, uintToIP2(n), bits)
-				//				fmt.Printf("%032b/%d %032b/%d\n", r.key, r.bits, n, bits)
 				b1 := r.bits
 				n1 := r.key
 				v1 := r.Value
