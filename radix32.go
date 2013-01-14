@@ -10,10 +10,6 @@
 // http://faculty.simpson.edu/lydia.sinapova/www/cmsc250/LN250_Weiss/L08-Radix.htm
 package bitradix
 
-import (
-	"net"
-)
-
 const (
 	bitSize32 = 32
 	bitSize64 = 64
@@ -100,17 +96,13 @@ func (r *Radix32) Do(f func(*Radix32, int)) {
 // Implement insert
 func (r *Radix32) insert(n uint32, bits int, v interface{}, bit int) *Radix32 {
 	if bit < 0 {
-		panic("NOT GOOD")
+		panic("bitradix: bit index smaller than zero")
 	}
 	switch r.Leaf() {
-	case false:
-		// Non-leaf node, one or two branches, possibly a key
+	case false: // Non-leaf node, one or two branches, possibly a key
 		bnew := bitK32(n, bit)
-		if r.bits == 0 && bits == bitSize32-bit {
-			// I should be put here
-			r.bits = bits
-			r.key = n
-			r.Value = v
+		if r.bits == 0 && bits == bitSize32-bit { // I should be put here
+			r.set(n, bits, v)
 			return r
 		}
 		if r.bits > 0 && bits == bitSize32-bit {
@@ -119,86 +111,51 @@ func (r *Radix32) insert(n uint32, bits int, v interface{}, bit int) *Radix32 {
 				b1 := r.bits
 				n1 := r.key
 				v1 := r.Value
-				r.bits = bits
-				r.key = n
-				r.Value = v
+				r.set(n, bits, v)
 				if r.branch[bcur] == nil {
-					r.branch[bcur] = &Radix32{[2]*Radix32{nil, nil}, nil, 0, 0, nil}
-					r.branch[bcur].parent = r
+					r.branch[bcur] = r.new()
 				}
 				r.branch[bcur].insert(n1, b1, v1, bit-1)
 				return r
 			}
 		}
 		if r.branch[bnew] == nil {
-			r.branch[bnew] = &Radix32{[2]*Radix32{nil, nil}, nil, 0, 0, nil}
-			r.branch[bnew].parent = r
+			r.branch[bnew] = r.new()
 		}
 		return r.branch[bnew].insert(n, bits, v, bit-1)
-	case true:
-		// External node, (optional) key, no branches
+	case true: // External node, (optional) key, no branches
 		if r.bits == 0 || r.key == n { // nothing here yet, put something in, or equal keys
-			r.bits = bits
-			r.key = n
-			r.Value = v
+			r.set(n, bits, v)
 			return r
 		}
 		bcur := bitK32(r.key, bit)
 		bnew := bitK32(n, bit)
 		if bcur == bnew {
-			r.branch[bcur] = &Radix32{[2]*Radix32{nil, nil}, nil, 0, 0, nil}
-			r.branch[bcur].parent = r
-			if r.bits > 0 && bits == bitSize32-bit {
+			r.branch[bcur] = r.new()
+			if r.bits > 0 && (bits == bitSize32-bit || bits < r.bits) {
 				b1 := r.bits
 				n1 := r.key
 				v1 := r.Value
-				r.bits = bits
-				r.key = n
-				r.Value = v
+				r.set(n, bits, v)
 				r.branch[bnew].insert(n1, b1, v1, bit-1)
 				return r
 			}
-			// TODO(mg): What about <
 			if r.bits > 0 && bits >= r.bits {
 				// current key can not be put further down, leave it
 				// but continue
 				return r.branch[bnew].insert(n, bits, v, bit-1)
 			}
-			if r.bits > 0 && bits < r.bits {
-				// leave us here, and put the other one down
-				b1 := r.bits
-				n1 := r.key
-				v1 := r.Value
-				r.bits = bits
-				r.key = n
-				r.Value = v
-				r.branch[bnew].insert(n1, b1, v1, bit-1)
-				return r
-				// I must be put here, and this one put down
-			}
 			// fill this node, with the current key - and call ourselves
-			r.branch[bcur].key = r.key
-			r.branch[bcur].Value = r.Value
-			r.branch[bcur].bits = r.bits
-			r.bits = 0
-			r.key = 0
-			r.Value = nil
+			r.branch[bcur].set(r.key, r.bits, r.Value)
+			r.clear()
 			return r.branch[bnew].insert(n, bits, v, bit-1)
 		}
-		// TODO(mg): refactor
-		// not equal
-		// keep current node, and branch off in child
-		r.branch[bcur] = &Radix32{[2]*Radix32{nil, nil}, nil, 0, 0, nil}
-		r.branch[bcur].parent = r
+		// not equal, keep current node, and branch off in child
+		r.branch[bcur] = r.new()
 		// fill this node, with the current key - and call ourselves
-		r.branch[bcur].key = r.key
-		r.branch[bcur].Value = r.Value
-		r.branch[bcur].bits = r.bits
-		r.bits = 0
-		r.key = 0
-		r.Value = nil
-		r.branch[bnew] = &Radix32{[2]*Radix32{nil, nil}, nil, 0, 0, nil}
-		r.branch[bnew].parent = r
+		r.branch[bcur].set(r.key, r.bits, r.Value)
+		r.clear()
+		r.branch[bnew] = r.new()
 		return r.branch[bnew].insert(n, bits, v, bit-1)
 	}
 	panic("bitradix: not reached")
@@ -228,9 +185,7 @@ func (r *Radix32) remove(n uint32, bits, bit int) *Radix32 {
 func (r *Radix32) prune(b bool) {
 	if b {
 		if r.parent == nil {
-			r.bits = 0
-			r.key = 0
-			r.Value = nil
+			r.clear()
 			return
 		}
 		// we are a node, we have a parent, so the parent is a non-leaf node
@@ -264,9 +219,7 @@ func (r *Radix32) prune(b bool) {
 			return
 		}
 		// move b0 into this node	
-		r.key = b0.key
-		r.bits = b0.bits
-		r.Value = b0.Value
+		r.set(b0.key, b0.bits, b0.Value)
 		r.branch[0] = b0.branch[0]
 		r.branch[1] = b0.branch[1]
 	}
@@ -275,9 +228,7 @@ func (r *Radix32) prune(b bool) {
 			return
 		}
 		// move b1 into this node
-		r.key = b1.key
-		r.bits = b1.bits
-		r.Value = b1.Value
+		r.set(b1.key, b1.bits, b1.Value)
 		r.branch[0] = b1.branch[0]
 		r.branch[1] = b1.branch[1]
 	}
@@ -321,14 +272,27 @@ func (r *Radix32) find(n uint32, bits, bit int, last *Radix32) *Radix32 {
 	panic("bitradix: not reached")
 }
 
+// Return a new node, with r as its parent
+func (r *Radix32) new() *Radix32 {
+	return &Radix32{[2]*Radix32{nil, nil}, r, 0, 0, nil}
+}
+
+func (r *Radix32) set(key uint32, bits int, value interface{}) {
+	r.key = key
+	r.bits = bits
+	r.Value = value
+}
+
+func (r *Radix32) clear() {
+	r.key = 0
+	r.bits = 0
+	r.Value = nil
+}
+
 // From: http://stackoverflow.com/questions/2249731/how-to-get-bit-by-bit-data-from-a-integer-value-in-c
 
 // Return bit k from n. We count from the right, MSB left.
 // So k = 0 is the last bit on the left and k = 31 is the first bit on the right.
 func bitK32(n uint32, k int) byte {
 	return byte((n & (1 << uint(k))) >> uint(k))
-}
-
-func uintToIP2(n uint32) net.IP {
-	return net.IPv4(byte(n>>24), byte(n>>16), byte(n>>8), byte(n))
 }
