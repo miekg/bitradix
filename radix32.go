@@ -11,7 +11,6 @@
 package bitradix
 
 import (
-	"fmt"
 	"net"
 )
 
@@ -76,7 +75,6 @@ func (r *Radix32) Remove(n uint32, bits int) *Radix32 {
 // Find searches the tree for the key n, where the first bits bits of n 
 // are significant. It returns the node found.
 func (r *Radix32) Find(n uint32, bits int) *Radix32 {
-	fmt.Printf("Find %s/%d\n", uintToIP2(n), bits)
 	return r.find(n, bits, bitSize32-1, nil)
 }
 
@@ -105,14 +103,10 @@ func (r *Radix32) Do(f func(*Radix32, int, int)) {
 // Implement insert
 func (r *Radix32) insert(n uint32, bits int, v interface{}, bit int) *Radix32 {
 	if bit < 0 {
-		fmt.Printf("%s/%d", uintToIP2(n), bits)
 		panic("NOT GOOD")
 	}
 	switch r.Leaf() {
 	case false:
-		if bit == 0 {
-			println("non-leaf: BIT IS ZERO")
-		}
 		// Non-leaf node, one or two branches, possibly a key
 		bnew := bitK32(n, bit)
 		if r.bits == 0 && bits == bitSize32-bit {
@@ -127,44 +121,32 @@ func (r *Radix32) insert(n uint32, bits int, v interface{}, bit int) *Radix32 {
 			// I should be put here, but something is already here
 			// swap. What if we can't swap? Overwrite??
 			//			bcur := bitK32(r.key, bit)
-			if r.bits == bits {
-				fmt.Printf("%d [%d:%d]) EN NU? %s/%d %s/%d\n", bitSize32-bit, bcur, bnew,uintToIP2(r.key), r.bits, uintToIP2(n), bits)
-				fmt.Printf("%032b/%d %032b/%d\n", r.key, r.bits, n, bits)
+			//			if r.bits == bits {
+			//				fmt.Printf("%d [%d:%d]) EN NU? %s/%d %s/%d\n", bitSize32-bit, bcur, bnew, uintToIP2(r.key), r.bits, uintToIP2(n), bits)
+			//				fmt.Printf("%032b/%d %032b/%d\n", r.key, r.bits, n, bits)
+			//			}
+			if r.bits > bits {
+				//				println("SWAP", bnew)
+				b1 := r.bits
+				n1 := r.key
+				v1 := r.Value
+				r.bits = bits
+				r.key = n
+				r.Value = v
+				if r.branch[bcur] == nil {
+					r.branch[bcur] = &Radix32{[2]*Radix32{nil, nil}, nil, 0, 0, nil}
+					r.branch[bcur].parent = r
+				}
+				r.branch[bcur].insert(n1, b1, v1, bit-1)
+				return r
 			}
-				fmt.Printf("%d [%d:%d]) EN NU? %s/%d %s/%d\n", bitSize32-bit, bcur, bnew,uintToIP2(r.key), r.bits, uintToIP2(n), bits)
-				fmt.Printf("%032b/%d %032b/%d\n", r.key, r.bits, n, bits)
-			println("SWAP", bnew)
-			b1 := r.bits
-			n1 := r.key
-			v1 := r.Value
-			//			ip1 := uintToIP(r.key)
-			//			ip := uintToIP(n)
-			//			fmt.Printf("%d here %s new: %s r.bits, bits %d %d\n", bit, ip1, ip, r.bits, bits)
-			r.bits = bits
-			r.key = n
-			r.Value = v
-			if r.branch[bcur] == nil {
-				r.branch[bcur] = &Radix32{[2]*Radix32{nil, nil}, nil, 0, 0, nil}
-				r.branch[bcur].parent = r
-			}
-			if bit == 0 {
-				println("1 BIT is 0")
-			}
-			r.branch[bcur].insert(n1, b1, v1, bit-1)
-			return r
 		}
 		if r.branch[bnew] == nil {
 			r.branch[bnew] = &Radix32{[2]*Radix32{nil, nil}, nil, 0, 0, nil}
 			r.branch[bnew].parent = r
 		}
-		if bit == 0 {
-			println("2 BIT is 0")
-		}
 		return r.branch[bnew].insert(n, bits, v, bit-1)
 	case true:
-		if bit == 0 {
-			println("    leaf: BIT IS ZERO")
-		}
 		// External node, (optional) key, no branches
 		if r.bits == 0 || r.key == n { // nothing here yet, put something in, or equal keys
 			r.bits = bits
@@ -183,18 +165,15 @@ func (r *Radix32) insert(n uint32, bits int, v interface{}, bit int) *Radix32 {
 				//				ip1 := uintToIP(r.key)
 				//				ip := uintToIP(n)
 				//				fmt.Printf("%d here %s new: %s\n", bit, ip1, ip)
-				println("SWAPPIE")
-				fmt.Printf("%d [%d:%d]) EN NU? %s/%d %s/%d\n", bitSize32-bit, bcur, bnew,uintToIP2(r.key), r.bits, uintToIP2(n), bits)
-				fmt.Printf("%032b/%d %032b/%d\n", r.key, r.bits, n, bits)
+				//				println("SWAPPIE")
+				// fmt.Printf("%d [%d:%d]) EN NU? %s/%d %s/%d\n", bitSize32-bit, bcur, bnew, uintToIP2(r.key), r.bits, uintToIP2(n), bits)
+				//				fmt.Printf("%032b/%d %032b/%d\n", r.key, r.bits, n, bits)
 				b1 := r.bits
 				n1 := r.key
 				v1 := r.Value
 				r.bits = bits
 				r.key = n
 				r.Value = v
-				if bit == 0 {
-					println("3 BIT is 0")
-				}
 				r.branch[bnew].insert(n1, b1, v1, bit-1)
 				return r
 			}
@@ -202,9 +181,6 @@ func (r *Radix32) insert(n uint32, bits int, v interface{}, bit int) *Radix32 {
 			if r.bits > 0 && bits >= r.bits {
 				// current key can not be put further down, leave it
 				// but continue
-				if bit == 0 {
-					println("4 BIT is 0")
-				}
 				return r.branch[bnew].insert(n, bits, v, bit-1)
 			}
 			if r.bits > 0 && bits < r.bits {
@@ -215,9 +191,6 @@ func (r *Radix32) insert(n uint32, bits int, v interface{}, bit int) *Radix32 {
 				r.bits = bits
 				r.key = n
 				r.Value = v
-				if bit == 0 {
-					println("7 BIT is 0")
-				}
 				r.branch[bnew].insert(n1, b1, v1, bit-1)
 				return r
 				// I must be put here, and this one put down
@@ -229,12 +202,6 @@ func (r *Radix32) insert(n uint32, bits int, v interface{}, bit int) *Radix32 {
 			r.bits = 0
 			r.key = 0
 			r.Value = nil
-			if bit == 0 {
-				fmt.Printf("inserting %s/%d %032b\n", uintToIP2(n), bits, n)
-				fmt.Printf("finding   %s/%d %032b\n", uintToIP2(r.branch[bcur].key), r.branch[bcur].bits, r.branch[bcur].key)
-				return r	// WRONG BUT OK
-				println("5 BIT is 0")
-			}
 			return r.branch[bnew].insert(n, bits, v, bit-1)
 		}
 		// TODO(mg): refactor
@@ -251,9 +218,6 @@ func (r *Radix32) insert(n uint32, bits int, v interface{}, bit int) *Radix32 {
 		r.Value = nil
 		r.branch[bnew] = &Radix32{[2]*Radix32{nil, nil}, nil, 0, 0, nil}
 		r.branch[bnew].parent = r
-		if bit == 0 {
-			println("6 BIT is 0")
-		}
 		return r.branch[bnew].insert(n, bits, v, bit-1)
 	}
 	panic("bitradix: not reached")
@@ -340,17 +304,24 @@ func (r *Radix32) prune(b bool) {
 }
 
 func (r *Radix32) find(n uint32, bits, bit int, last *Radix32) *Radix32 {
-	fmt.Printf("   path %s/%d\n", uintToIP2(r.key), r.bits)
-	if last != nil {
-	fmt.Printf("   last %s/%d\n", uintToIP2(last.key), last.bits)
-	}
+	//	fmt.Printf("   path %s/%d\n", uintToIP2(r.key), r.bits)
+	//	if last != nil {
+	//	fmt.Printf("   last %s/%d\n", uintToIP2(last.key), last.bits)
+	//	}
 	switch r.Leaf() {
 	case false:
-		// A prefix that is matching
+		// A prefix that is matching (BETTER MATCHING)
 		mask := uint32(mask32 << (bitSize32 - uint(r.bits)))
 		if r.bits > 0 && r.key&mask == n&mask {
 			//			fmt.Printf("Setting last to %d %s\n", r.key, r.Value)
-			last = r
+			if last == nil {
+				last = r
+			} else {
+				// Only when bigger
+				if r.bits >= last.bits {
+					last = r
+				}
+			}
 		}
 		if r.bits == bits && r.key&mask == n&mask {
 			// our key
@@ -361,7 +332,7 @@ func (r *Radix32) find(n uint32, bits, bit int, last *Radix32) *Radix32 {
 		if r.branch[k] == nil {
 			//			fmt.Printf("%p %p %p\n", r, r.branch[0], r.branch[1])
 			//			println("bit", bit, "k", k)
-			return last		// REALLY?
+			return last // REALLY?
 		}
 		return r.branch[k].find(n, bits, bit-1, last)
 	case true:
