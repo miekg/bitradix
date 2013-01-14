@@ -33,11 +33,10 @@ type Radix32 struct {
 // New32 returns an empty, initialized Radix32 tree.
 func New32() *Radix32 {
 	// It gets two branches by default
-	root := &Radix32{[2]*Radix32{
+	return &Radix32{[2]*Radix32{
 		&Radix32{[2]*Radix32{nil, nil}, nil, 0, 0, nil},
 		&Radix32{[2]*Radix32{nil, nil}, nil, 0, 0, nil},
 	}, nil, 0, 0, nil}
-	return root
 }
 
 // Key returns the key under which this node is stored.
@@ -73,29 +72,27 @@ func (r *Radix32) Remove(n uint32, bits int) *Radix32 {
 }
 
 // Find searches the tree for the key n, where the first bits bits of n 
-// are significant. It returns the node found.
+// are significant. It returns the node found or a node with a common prefix. It 
+// returns nil when nothing can be found.
 func (r *Radix32) Find(n uint32, bits int) *Radix32 {
 	return r.find(n, bits, bitSize32-1, nil)
 }
 
 // Do traverses the tree r in breadth-first order. For each visited node,
-// the function f is called with the current node, the level of the node
-// (starting with 0 for the root), and the branch taken
+// the function f is called with the current node, and the branch taken
 // (0 for the zero, 1 for the one branch, -1 is used for the root node).
-func (r *Radix32) Do(f func(*Radix32, int, int)) {
+func (r *Radix32) Do(f func(*Radix32, int)) {
 	q := make(queue32, 0)
 
-	level := 0 // TODO(mg): Does level really works as intended??
-	q.Push(&node32{r, level, -1})
+	q.Push(&node32{r, -1})
 	x := q.Pop()
 	for x != nil {
-		f(x.Radix32, x.level, x.branch)
+		f(x.Radix32, x.branch)
 		for i, b := range x.Radix32.branch {
 			if b != nil {
-				q.Push(&node32{b, level, i})
+				q.Push(&node32{b, i})
 			}
 		}
-		level++
 		x = q.Pop()
 	}
 }

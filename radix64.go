@@ -38,20 +38,18 @@ func (r *Radix64) Find(n uint64, bits int) *Radix64 {
 	return r.find(n, bits, bitSize64-1, nil)
 }
 
-func (r *Radix64) Do(f func(*Radix64, int, int)) {
+func (r *Radix64) Do(f func(*Radix64, int)) {
 	q := make(queue64, 0)
 
-	level := 0
-	q.Push(&node64{r, level, -1})
+	q.Push(&node64{r, -1})
 	x := q.Pop()
 	for x != nil {
-		f(x.Radix64, x.level, x.branch)
+		f(x.Radix64, x.branch)
 		for i, b := range x.Radix64.branch {
 			if b != nil {
-				q.Push(&node64{b, level, i})
+				q.Push(&node64{b, i})
 			}
 		}
-		level++
 		x = q.Pop()
 	}
 }
