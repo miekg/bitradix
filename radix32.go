@@ -76,6 +76,7 @@ func (r *Radix32) Remove(n uint32, bits int) *Radix32 {
 // Find searches the tree for the key n, where the first bits bits of n 
 // are significant. It returns the node found.
 func (r *Radix32) Find(n uint32, bits int) *Radix32 {
+	fmt.Printf("Find %s/%d\n", uintToIP2(n), bits)
 	return r.find(n, bits, bitSize32-1, nil)
 }
 
@@ -114,21 +115,25 @@ func (r *Radix32) insert(n uint32, bits int, v interface{}, bit int) *Radix32 {
 		}
 		// Non-leaf node, one or two branches, possibly a key
 		bnew := bitK32(n, bit)
-		if r.bits == 0 && bits == bitSize32-bit-1 {
+		if r.bits == 0 && bits == bitSize32-bit {
 			// I should be put here
 			r.bits = bits
 			r.key = n
 			r.Value = v
 			return r
 		}
-		if r.bits > 0 && bits == bitSize32-bit-1 {
+		if r.bits > 0 && bits == bitSize32-bit {
+			bcur := bitK32(r.key, bit)
 			// I should be put here, but something is already here
 			// swap. What if we can't swap? Overwrite??
 			//			bcur := bitK32(r.key, bit)
 			if r.bits == bits {
-				fmt.Printf("%d) EN NU? %s/%d %s/%d\n", bit, uintToIP2(r.key), r.bits, uintToIP2(n), bits)
+				fmt.Printf("%d [%d:%d]) EN NU? %s/%d %s/%d\n", bitSize32-bit, bcur, bnew,uintToIP2(r.key), r.bits, uintToIP2(n), bits)
+				fmt.Printf("%032b/%d %032b/%d\n", r.key, r.bits, n, bits)
 			}
-				println("SWAP", bnew)
+				fmt.Printf("%d [%d:%d]) EN NU? %s/%d %s/%d\n", bitSize32-bit, bcur, bnew,uintToIP2(r.key), r.bits, uintToIP2(n), bits)
+				fmt.Printf("%032b/%d %032b/%d\n", r.key, r.bits, n, bits)
+			println("SWAP", bnew)
 			b1 := r.bits
 			n1 := r.key
 			v1 := r.Value
@@ -172,13 +177,15 @@ func (r *Radix32) insert(n uint32, bits int, v interface{}, bit int) *Radix32 {
 		if bcur == bnew {
 			r.branch[bcur] = &Radix32{[2]*Radix32{nil, nil}, nil, 0, 0, nil}
 			r.branch[bcur].parent = r
-			if r.bits > 0 && bits == bitSize32-bit-1 {
+			if r.bits > 0 && bits == bitSize32-bit {
 				// I should be put here, but something is already here
 				// swap. What if we can't swap? Overwrite??
 				//				ip1 := uintToIP(r.key)
 				//				ip := uintToIP(n)
 				//				fmt.Printf("%d here %s new: %s\n", bit, ip1, ip)
-				//				println("SWAP")
+				println("SWAPPIE")
+				fmt.Printf("%d [%d:%d]) EN NU? %s/%d %s/%d\n", bitSize32-bit, bcur, bnew,uintToIP2(r.key), r.bits, uintToIP2(n), bits)
+				fmt.Printf("%032b/%d %032b/%d\n", r.key, r.bits, n, bits)
 				b1 := r.bits
 				n1 := r.key
 				v1 := r.Value
@@ -333,6 +340,10 @@ func (r *Radix32) prune(b bool) {
 }
 
 func (r *Radix32) find(n uint32, bits, bit int, last *Radix32) *Radix32 {
+	fmt.Printf("   path %s/%d\n", uintToIP2(r.key), r.bits)
+	if last != nil {
+	fmt.Printf("   last %s/%d\n", uintToIP2(last.key), last.bits)
+	}
 	switch r.Leaf() {
 	case false:
 		// A prefix that is matching
@@ -350,7 +361,7 @@ func (r *Radix32) find(n uint32, bits, bit int, last *Radix32) *Radix32 {
 		if r.branch[k] == nil {
 			//			fmt.Printf("%p %p %p\n", r, r.branch[0], r.branch[1])
 			//			println("bit", bit, "k", k)
-			return nil
+			return last		// REALLY?
 		}
 		return r.branch[k].find(n, bits, bit-1, last)
 	case true:
