@@ -64,6 +64,9 @@ func (r *Radix32) Insert(n uint32, bits int, v interface{}) *Radix32 {
 // Remove removes a value from the tree r. It returns the node removed, or nil
 // when nothing is found, r must be the root of the tree.
 func (r *Radix32) Remove(n uint32, bits int) *Radix32 {
+	if r.parent != nil {
+		panic("bitradix: not the root node")
+	}
 	return r.remove(n, bits, bitSize32-1)
 }
 
@@ -71,6 +74,9 @@ func (r *Radix32) Remove(n uint32, bits int) *Radix32 {
 // are significant. It returns the node found or a node with a common prefix. It 
 // returns nil when nothing can be found.
 func (r *Radix32) Find(n uint32, bits int) *Radix32 {
+	if r.parent != nil {
+		panic("bitradix: not the root node")
+	}
 	return r.find(n, bits, bitSize32-1, nil)
 }
 
@@ -182,7 +188,6 @@ func (r *Radix32) remove(n uint32, bits, bit int) *Radix32 {
 }
 
 // Prune the tree, when b is true the current node is deleted.
-// TODO(mg): needs to be fixed
 func (r *Radix32) prune(b bool) {
 	if b {
 		if r.parent == nil {

@@ -37,10 +37,16 @@ func (r *Radix64) Insert(n uint64, bits int, v interface{}) *Radix64 {
 }
 
 func (r *Radix64) Remove(n uint64, bits int) *Radix64 {
+	if r.parent != nil {
+		panic("bitradix: not the root node")
+	}
 	return r.remove(n, bits, bitSize32-1)
 }
 
 func (r *Radix64) Find(n uint64, bits int) *Radix64 {
+	if r.parent != nil {
+		panic("bitradix: not the root node")
+	}
 	return r.find(n, bits, bitSize32-1, nil)
 }
 
