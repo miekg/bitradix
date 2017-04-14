@@ -422,46 +422,18 @@ func TestQueue2(t *testing.T) {
 	}
 }
 
-func TestPanic(t *testing.T) {
-
-	tt := []bittest{
-		{0x1010a1ea, 32},
-		{0x1010e402, 32},
-		{0x1010cffa, 32},
-		{0x10107501, 32},
-		{0x1010751c, 32},
-		{0x10108220, 32},
-		{0x1010822a, 32},
-		{0x10108252, 32},
-		{0x10108da3, 32},
-		{0x10108da4, 32},
-		{0x10108da5, 32},
-		{0x10108da6, 32},
-		{0x10108da7, 32},
-		{0x10108da8, 32},
-		{0x10108da9, 32},
-		{0x10108daa, 32},
-		{0x10108ddf, 24},
-		{0x10108de0, 24},
-		{0x10108de1, 24},
-		{0x10108de2, 32},
-		{0x10108de3, 24},
-		{0x10108de4, 24},
-		{0x10108de5, 24},
-		{0x10108de6, 24},
-		{0x10108de7, 32},
-		{0x10108df1, 32},
-		{0x10108df2, 24},
-		{0x10108df3, 32},
-		{0x10108df4, 32},
-		{0x10108df5, 32},
-		{0x10108df6, 32},
-		{0x10108df7, 32},
+func TestPanic32(t *testing.T) {
+	r := New32()
+	var k uint32
+	for k = 0; k <= 255; k++ {
+		r.Insert(k, 32, k)
 	}
+}
 
-	r32 := New32()
-
-	for i, bt := range tt {
-		r32.Insert(bt.key, bt.bit, i)
+func TestPanic64(t *testing.T) {
+	r := New64()
+	var k uint64
+	for k = 0; k <= 255; k++ {
+		r.Insert(k, 64, k)
 	}
 }
