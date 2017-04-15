@@ -421,3 +421,19 @@ func TestQueue2(t *testing.T) {
 		}
 	}
 }
+
+func TestPanic32(t *testing.T) {
+	r := New32()
+	var k uint32
+	for k = 0; k <= 255; k++ {
+		r.Insert(k, 32, k)
+	}
+}
+
+func TestPanic64(t *testing.T) {
+	r := New64()
+	var k uint64
+	for k = 0; k <= 255; k++ {
+		r.Insert(k, 64, k)
+	}
+}
